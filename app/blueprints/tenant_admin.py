@@ -2128,12 +2128,14 @@ def store_admin_edit(admin_id):
                         store_id_int = int(store_id)
                         
                         if store_id_int in existing_relations:
-                            # 既存の関係を復元（オーナー権限は保持、管理権限はフォームから取得）
+                            # 既存の関係を復元（オーナー権限は保持、管理権限はオーナーなら常に1）
+                            is_owner_for_store = existing_relations[store_id_int]['is_owner']
+                            can_manage_for_store = 1 if is_owner_for_store == 1 else can_manage_admins
                             new_relation = TKanrishaTenpo(
                                 admin_id=admin_id,
                                 store_id=store_id_int,
-                                is_owner=existing_relations[store_id_int]['is_owner'],
-                                can_manage_admins=can_manage_admins
+                                is_owner=is_owner_for_store,
+                                can_manage_admins=can_manage_for_store
                             )
                         else:
                             # 新しい関係を作成
