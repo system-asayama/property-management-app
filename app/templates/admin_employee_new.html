@@ -33,19 +33,24 @@
     <div class="row">
       <label style="font-weight:bold">勤務する店舗（複数選択可）</label>
       {% if stores %}
-        <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="max-height:200px;overflow-y:auto">
           {% for store in stores %}
-          <div style="border:1px solid {% if store.id == from_store_id %}#999{% else %}#ccc{% endif %};border-radius:4px;padding:12px;background:{% if store.id == from_store_id %}#f5f5f5{% else %}#fff{% endif %}">
-            <label style="display:flex;align-items:center;cursor:{% if store.id == from_store_id %}default{% else %}pointer{% endif %}">
-              <input type="checkbox" name="store_ids" value="{{ store.id }}" 
-                     {% if store.id == from_store_id %}checked disabled{% endif %}
-                     style="margin-right:8px;flex-shrink:0">
-              <span style="flex:1">{{ store.名称 }}{% if store.id == from_store_id %}<span style="color:#666;font-size:0.9em">（作成元）</span>{% endif %}</span>
+          {% if from_store_id and store.id == from_store_id %}
+          <div style="border:1px solid #ddd;border-radius:6px;padding:12px;margin-bottom:8px;background:#f5f5f5;cursor:not-allowed;opacity:0.7">
+            <label style="display:flex;align-items:center;cursor:not-allowed;margin:0">
+              <input type="checkbox" name="store_ids" value="{{ store.id }}" checked disabled style="margin:0 12px 0 0;width:18px;height:18px;flex-shrink:0">
+              <span style="flex:1">{{ store.名称 }} <small style="color:#666">(作成元)</small></span>
             </label>
-            {% if store.id == from_store_id %}
             <input type="hidden" name="store_ids" value="{{ store.id }}">
-            {% endif %}
           </div>
+          {% else %}
+          <div style="border:1px solid #ddd;border-radius:6px;padding:12px;margin-bottom:8px;background:white;cursor:pointer;transition:all 0.2s" onmouseover="this.style.background='#f9f9f9';this.style.borderColor='#999'" onmouseout="this.style.background='white';this.style.borderColor='#ddd'">
+            <label style="display:flex;align-items:center;cursor:pointer;margin:0">
+              <input type="checkbox" name="store_ids" value="{{ store.id }}" style="margin:0 12px 0 0;width:18px;height:18px;flex-shrink:0">
+              <span style="flex:1">{{ store.名称 }}</span>
+            </label>
+          </div>
+          {% endif %}
           {% endfor %}
         </div>
       {% else %}
@@ -54,10 +59,9 @@
     </div>
     
     <div class="actions" style="margin-top:20px; display:flex; gap:10px">
-      <button class="btn" type="submit">作成</button>
-      <a class="btn sub" href="{{ back_url }}">キャンセル</a>
+      <button type="submit">作成</button>
+      <a href="{{ back_url }}" class="button secondary">キャンセル</a>
     </div>
   </div>
 </form>
-
 {% endblock %}
