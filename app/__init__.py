@@ -127,6 +127,14 @@ def create_app() -> Flask:
     except Exception as e:
         print(f"⚠️ データベース初期化エラー: {e}")
     
+    # データベーステーブル作成
+    try:
+        from .db import Base, engine
+        Base.metadata.create_all(bind=engine)
+        print("✅ データベーステーブル作成完了")
+    except Exception as e:
+        print(f"⚠️ データベーステーブル作成エラー: {e}")
+    
     # データベースマイグレーション実行
     try:
         from .migrations import run_migrations
