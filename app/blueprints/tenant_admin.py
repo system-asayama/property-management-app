@@ -1249,31 +1249,36 @@ def store_admin_new():
         # バリデーション
         if not login_id or not name or not password:
             flash('ログインID、氏名、パスワードは必須です', 'error')
+            tenant = db.query(TTenant).filter(TTenant.id == tenant_id).first()
             stores_list = db.query(TTenpo).filter(TTenpo.tenant_id == tenant_id).order_by(TTenpo.id).all()
-            return render_template('tenant_store_admin_new.html', stores=stores_list, from_store_id=store_id, back_url=url_for('tenant_admin.store_admins'))
+            return render_template('tenant_store_admin_new.html', tenant=tenant, stores=stores_list, from_store_id=store_id, back_url=url_for('tenant_admin.store_admins'))
         
         if not store_ids:
             flash('少なくとも1つの店舗を選択してください', 'error')
+            tenant = db.query(TTenant).filter(TTenant.id == tenant_id).first()
             stores_list = db.query(TTenpo).filter(TTenpo.tenant_id == tenant_id).order_by(TTenpo.id).all()
-            return render_template('tenant_store_admin_new.html', stores=stores_list, from_store_id=store_id, back_url=url_for('tenant_admin.store_admins'))
+            return render_template('tenant_store_admin_new.html', tenant=tenant, stores=stores_list, from_store_id=store_id, back_url=url_for('tenant_admin.store_admins'))
         
         if password != password_confirm:
             flash('パスワードが一致しません', 'error')
+            tenant = db.query(TTenant).filter(TTenant.id == tenant_id).first()
             stores_list = db.query(TTenpo).filter(TTenpo.tenant_id == tenant_id).order_by(TTenpo.id).all()
-            return render_template('tenant_store_admin_new.html', stores=stores_list, from_store_id=store_id, back_url=url_for('tenant_admin.store_admins'))
+            return render_template('tenant_store_admin_new.html', tenant=tenant, stores=stores_list, from_store_id=store_id, back_url=url_for('tenant_admin.store_admins'))
         
         if len(password) < 8:
             flash('パスワードは8文字以上にしてください', 'error')
+            tenant = db.query(TTenant).filter(TTenant.id == tenant_id).first()
             stores_list = db.query(TTenpo).filter(TTenpo.tenant_id == tenant_id).order_by(TTenpo.id).all()
-            return render_template('tenant_store_admin_new.html', stores=stores_list, from_store_id=store_id, back_url=url_for('tenant_admin.store_admins'))
+            return render_template('tenant_store_admin_new.html', tenant=tenant, stores=stores_list, from_store_id=store_id, back_url=url_for('tenant_admin.store_admins'))
         
         try:
             # ログインID重複チェック
             existing = db.query(TKanrisha).filter(TKanrisha.login_id == login_id).first()
             if existing:
                 flash(f'ログインID "{login_id}" は既に使用されています', 'error')
+                tenant = db.query(TTenant).filter(TTenant.id == tenant_id).first()
                 stores_list = db.query(TTenpo).filter(TTenpo.tenant_id == tenant_id).order_by(TTenpo.id).all()
-                return render_template('tenant_store_admin_new.html', stores=stores_list, from_store_id=store_id, back_url=url_for('tenant_admin.store_admins'))
+                return render_template('tenant_store_admin_new.html', tenant=tenant, stores=stores_list, from_store_id=store_id, back_url=url_for('tenant_admin.store_admins'))
             
 
             # 管理者作成
@@ -1311,15 +1316,17 @@ def store_admin_new():
             db.rollback()
             flash(f'エラー: {str(e)}', 'error')
         finally:
-            db.close()
+            tenant = db.query(TTenant).filter(TTenant.id == tenant_id).first()
             stores_list = db.query(TTenpo).filter(TTenpo.tenant_id == tenant_id).order_by(TTenpo.id).all()
-            return render_template('tenant_store_admin_new.html', stores=stores_list, from_store_id=store_id, back_url=url_for('tenant_admin.store_admins'))
+            db.close()
+            return render_template('tenant_store_admin_new.html', tenant=tenant, stores=stores_list, from_store_id=store_id, back_url=url_for('tenant_admin.store_admins'))
     
     # GETリクエスト
     db = SessionLocal()
     try:
+        tenant = db.query(TTenant).filter(TTenant.id == tenant_id).first()
         stores = db.query(TTenpo).filter(TTenpo.tenant_id == tenant_id).order_by(TTenpo.id).all()
-        return render_template('tenant_store_admin_new.html', stores=stores, from_store_id=store_id, back_url=url_for('tenant_admin.store_admins'))
+        return render_template('tenant_store_admin_new.html', tenant=tenant, stores=stores, from_store_id=store_id, back_url=url_for('tenant_admin.store_admins'))
     finally:
         db.close()
 
