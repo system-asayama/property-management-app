@@ -360,39 +360,56 @@ def employee_new():
     """従業員新規作成"""
     store_id = session.get('store_id')
     tenant_id = session.get('tenant_id')
+    admin_id = session.get('user_id')
     
     if not store_id:
         flash('店舗を選択してください。マイページの「店舗選択」から店舗を選んでダッシュボードへ進んでください。', 'warning')
         return redirect(url_for('admin.mypage'))
     
-    if request.method == 'POST':
-        login_id = request.form.get('login_id', '').strip()
-        name = request.form.get('name', '').strip()
-        email = request.form.get('email', '').strip()
-        password = request.form.get('password', '')
-        password_confirm = request.form.get('password_confirm', '')
+    db = SessionLocal()
+    
+    try:
+        # 管理者が管理する店舗一覧を取得
+        stores_list = db.query(TTenpo).join(
+            TKanrishaTenpo, TTenpo.id == TKanrishaTenpo.store_id
+        ).filter(
+            TKanrishaTenpo.admin_id == admin_id
+        ).order_by(TTenpo.id).all()
         
-        # バリデーション
-        if not login_id or not name or not email:
-            flash('ログインID、氏名、メールアドレスは必須です', 'error')
-            return render_template('admin_employee_new.html')
-        
-        if password and password != password_confirm:
-            flash('パスワードが一致しません', 'error')
-            return render_template('admin_employee_new.html')
-        
-        if password and len(password) < 8:
-            flash('パスワードは8文字以上にしてください', 'error')
-            return render_template('admin_employee_new.html')
-        
-        db = SessionLocal()
-        
-        try:
+        if request.method == 'POST':
+            login_id = request.form.get('login_id', '').strip()
+            name = request.form.get('name', '').strip()
+            email = request.form.get('email', '').strip()
+            password = request.form.get('password', '')
+            password_confirm = request.form.get('password_confirm', '')
+            store_ids = request.form.getlist('store_ids')
+            
+            # 作成元の店舗IDを必ず含める
+            if str(store_id) not in store_ids:
+                store_ids.append(str(store_id))
+            
+            # バリデーション
+            if not login_id or not name or not email:
+                flash('ログインID、氏名、メールアドレスは必須です', 'error')
+                return render_template('admin_employee_new.html', stores=stores_list, from_store_id=store_id, back_url=url_for('admin.employees'))
+            
+            if not store_ids:
+                flash('少なくとも1つの店舗を選択してください', 'error')
+                return render_template('admin_employee_new.html', stores=stores_list, from_store_id=store_id, back_url=url_for('admin.employees'))
+            
+            if password and password != password_confirm:
+                flash('パスワードが一致しません', 'error')
+                return render_template('admin_employee_new.html', stores=stores_list, from_store_id=store_id, back_url=url_for('admin.employees'))
+            
+            if password and len(password) < 8:
+                flash('パスワードは8文字以上にしてください', 'error')
+                return render_template('admin_employee_new.html', stores=stores_list, from_store_id=store_id, back_url=url_for('admin.employees'))
+            
             # ログインID重複チェック
             existing = db.query(TJugyoin).filter(TJugyoin.login_id == login_id).first()
             if existing:
                 flash(f'ログインID "{login_id}" は既に使用されています', 'error')
-                return render_template('admin_employee_new.html')
+                return render_template('admin_employee_new.html', stores=stores_list, from_store_id=store_id, back_url=url_for('admin.employees'))
             
             # 従業員作成
             hashed_password = generate_password_hash(password) if password else None
@@ -406,22 +423,24 @@ def employee_new():
                 active=1
             )
             db.add(new_employee)
-            db.commit()
+            db.flush()  # IDを取得するため
             
-            # 店舗との紐付け
-            new_relation = TJugyoinTenpo(
-                employee_id=new_employee.id,
-                store_id=store_id
-            )
-            db.add(new_relation)
+            # 選択された店舗との関連を作成
+            for store_id_str in store_ids:
+                store_id_int = int(store_id_str)
+                new_relation = TJugyoinTenpo(
+                    employee_id=new_employee.id,
+                    store_id=store_id_int
+                )
+                db.add(new_relation)
             db.commit()
             
             flash(f'従業員 "{name}" を作成しました', 'success')
             return redirect(url_for('admin.employees'))
-        finally:
-            db.close()
-    
-    return render_template('admin_employee_new.html')
+        
+        return render_template('admin_employee_new.html', stores=stores_list, from_store_id=store_id, back_url=url_for('admin.employees'))
+    finally:
+        db.close()
 
 
 @bp.route('/employees/<int:employee_id>/toggle', methods=['POST'])

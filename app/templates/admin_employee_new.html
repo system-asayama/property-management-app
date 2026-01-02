@@ -33,13 +33,18 @@
     <div class="row">
       <label style="font-weight:bold">勤務する店舗（複数選択可）</label>
       {% if stores %}
-        <div style="border:1px solid #ccc;padding:12px;max-height:200px;overflow-y:auto">
+        <div style="display:flex;flex-direction:column;gap:8px">
           {% for store in stores %}
-          <div style="margin-bottom:8px">
-            <label style="display:flex;align-items:center;cursor:pointer">
-              <input type="checkbox" name="store_ids" value="{{ store.id }}" style="margin-right:8px">
-              <span>{{ store.名称 }}</span>
+          <div style="border:1px solid {% if store.id == from_store_id %}#999{% else %}#ccc{% endif %};border-radius:4px;padding:12px;background:{% if store.id == from_store_id %}#f5f5f5{% else %}#fff{% endif %}">
+            <label style="display:flex;align-items:center;cursor:{% if store.id == from_store_id %}default{% else %}pointer{% endif %}">
+              <input type="checkbox" name="store_ids" value="{{ store.id }}" 
+                     {% if store.id == from_store_id %}checked disabled{% endif %}
+                     style="margin-right:8px;flex-shrink:0">
+              <span style="flex:1">{{ store.名称 }}{% if store.id == from_store_id %}<span style="color:#666;font-size:0.9em">（作成元）</span>{% endif %}</span>
             </label>
+            {% if store.id == from_store_id %}
+            <input type="hidden" name="store_ids" value="{{ store.id }}">
+            {% endif %}
           </div>
           {% endfor %}
         </div>
