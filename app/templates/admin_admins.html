@@ -118,19 +118,21 @@
       </td>
       <td style="padding:8px;white-space:nowrap;color:#666">{{ admin.created_at }}</td>
       <td style="padding:8px;white-space:nowrap">
-        {% if admin.id == current_user_id %}
-          <span style="color:#999">（自分）</span>
-        {% elif is_owner or can_manage_admins %}
+        {% if is_owner or can_manage_admins or admin.id == current_user_id %}
           <a class="btn small" href="{{ url_for('admin.admin_edit', admin_id=admin.id) }}" style="font-size:0.9em;padding:4px 8px">編集</a>
           
-          {% if admin.is_owner != 1 %}
-          <form method="post" action="{{ url_for('admin.admin_transfer_owner', admin_id=admin.id) }}" style="display:inline" onsubmit="return confirm('{{ admin.name }} にオーナー権限を移譲しますか？');">
-            <button class="btn small" type="submit" style="background:#ff6f00;font-size:0.9em;padding:4px 8px">オーナー移譲</button>
-          </form>
-          
-          <form method="post" action="{{ url_for('admin.admin_delete', admin_id=admin.id) }}" style="display:inline" onsubmit="return confirm('本当に削除しますか？');">
-            <button class="btn small" type="submit" style="background:#d32f2f;font-size:0.9em;padding:4px 8px">削除</button>
-          </form>
+          {% if admin.id != current_user_id %}
+            {% if admin.is_owner != 1 %}
+            <form method="post" action="{{ url_for('admin.admin_transfer_owner', admin_id=admin.id) }}" style="display:inline" onsubmit="return confirm('{{ admin.name }} にオーナー権限を移譲しますか？');">
+              <button class="btn small" type="submit" style="background:#ff6f00;font-size:0.9em;padding:4px 8px">オーナー移譲</button>
+            </form>
+            
+            <form method="post" action="{{ url_for('admin.admin_delete', admin_id=admin.id) }}" style="display:inline" onsubmit="return confirm('本当に削除しますか？');">
+              <button class="btn small" type="submit" style="background:#d32f2f;font-size:0.9em;padding:4px 8px">削除</button>
+            </form>
+            {% endif %}
+          {% else %}
+            <span style="color:#999">（自分）</span>
           {% endif %}
         {% else %}
           <span style="color:#999">-</span>
@@ -187,19 +189,21 @@
     </div>
     
     <div class="admin-card-actions">
-      {% if admin.id == current_user_id %}
-        <span style="color:#999">（自分）</span>
-      {% elif is_owner or can_manage_admins %}
+      {% if is_owner or can_manage_admins or admin.id == current_user_id %}
         <a class="btn small" href="{{ url_for('admin.admin_edit', admin_id=admin.id) }}">編集</a>
         
-        {% if admin.is_owner != 1 %}
-        <form method="post" action="{{ url_for('admin.admin_transfer_owner', admin_id=admin.id) }}" style="display:inline" onsubmit="return confirm('{{ admin.name }} にオーナー権限を移譲しますか？');">
-          <button class="btn small" type="submit" style="background:#ff6f00">オーナー移譲</button>
-        </form>
-        
-        <form method="post" action="{{ url_for('admin.admin_delete', admin_id=admin.id) }}" style="display:inline" onsubmit="return confirm('本当に削除しますか？');">
-          <button class="btn small" type="submit" style="background:#d32f2f">削除</button>
-        </form>
+        {% if admin.id != current_user_id %}
+          {% if admin.is_owner != 1 %}
+          <form method="post" action="{{ url_for('admin.admin_transfer_owner', admin_id=admin.id) }}" style="display:inline" onsubmit="return confirm('{{ admin.name }} にオーナー権限を移譲しますか？');">
+            <button class="btn small" type="submit" style="background:#ff6f00">オーナー移譲</button>
+          </form>
+          
+          <form method="post" action="{{ url_for('admin.admin_delete', admin_id=admin.id) }}" style="display:inline" onsubmit="return confirm('本当に削除しますか？');">
+            <button class="btn small" type="submit" style="background:#d32f2f">削除</button>
+          </form>
+          {% endif %}
+        {% else %}
+          <span style="color:#999">（自分）</span>
         {% endif %}
       {% else %}
         <span style="color:#999">-</span>
