@@ -47,7 +47,12 @@
             <td style="border:1px solid #ccc;padding:8px;text-align:center;width:40px">
               <input type="checkbox" name="store_ids" value="{{ store.id }}" {% if store.id in admin_store_ids %}checked{% endif %}>
             </td>
-            <td style="border:1px solid #ccc;padding:8px">{{ store['名称'] }}</td>
+            <td style="border:1px solid #ccc;padding:8px">
+              {{ store['名称'] }}
+              {% if store.is_owner %}
+                <span style="color:#ff9800;font-weight:bold;margin-left:8px">★ オーナー</span>
+              {% endif %}
+            </td>
           </tr>
           {% endfor %}
         </table>

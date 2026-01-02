@@ -897,7 +897,22 @@ def admin_edit(admin_id):
             and_(TTenpo.tenant_id == tenant_id, TTenpo.有効 == 1)
         ).order_by(TTenpo.名称).all()
         
-        stores_data = [{'id': store.id, '名称': store.名称} for store in stores]
+        # 各店舗について、編集対象の管理者がオーナーかどうかを取得
+        stores_data = []
+        for store in stores:
+            # この店舗で編集対象の管理者がオーナーかどうかを確認
+            rel = db.query(TKanrishaTenpo).filter(
+                and_(
+                    TKanrishaTenpo.admin_id == admin_id,
+                    TKanrishaTenpo.store_id == store.id
+                )
+            ).first()
+            is_owner = rel.is_owner == 1 if rel else False
+            stores_data.append({
+                'id': store.id,
+                '名称': store.名称,
+                'is_owner': is_owner
+            })
         
         if request.method == 'POST':
             login_id = request.form.get('login_id', '').strip()
