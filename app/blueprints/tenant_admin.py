@@ -490,8 +490,15 @@ def store_detail(store_id):
             'id': store_obj.id,
             '名称': store_obj.名称,
             'slug': store_obj.slug,
+            '郵便番号': store_obj.郵便番号,
+            '住所': store_obj.住所,
+            '電話番号': store_obj.電話番号,
+            'email': store_obj.email,
+            'openai_api_key': store_obj.openai_api_key,
+            'active': store_obj.有効,
             '有効': store_obj.有効,
-            'created_at': store_obj.created_at
+            'created_at': store_obj.created_at,
+            'updated_at': store_obj.updated_at
         }
         
         # 店舗管理者数を取得

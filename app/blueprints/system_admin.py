@@ -1830,6 +1830,8 @@ def tenant_store_detail(tid, sid):
             'address': store.住所,
             'phone': store.電話番号,
             'email': store.email,
+            'openai_api_key': store.openai_api_key,
+            'active': store.有効,
             'created_at': store.created_at,
             'updated_at': store.updated_at
         }
