@@ -354,6 +354,7 @@ def tenant_detail(tid):
             'phone': tenant_obj.電話番号,
             'email': tenant_obj.email,
             'openai_api_key': tenant_obj.openai_api_key,
+            'active': tenant_obj.有効,
             'created_at': tenant_obj.created_at,
             'updated_at': tenant_obj.updated_at
         }

@@ -88,6 +88,17 @@
   </div>
   
   <div class="tenant-info-row">
+    <span class="tenant-info-label">有効/無効:</span>
+    <span class="tenant-info-value">
+      {% if tenant.active == 1 %}
+        <span style="color:#2e7d32">✓ 有効</span>
+      {% else %}
+        <span style="color:#d32f2f">× 無効</span>
+      {% endif %}
+    </span>
+  </div>
+  
+  <div class="tenant-info-row">
     <span class="tenant-info-label">郵便番号:</span>
     <span class="tenant-info-value">{{ tenant['postal_code'] }}</span>
   </div>
