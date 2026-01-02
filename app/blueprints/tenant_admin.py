@@ -704,35 +704,59 @@ def tenant_admins():
 def tenant_admin_new():
     """テナント管理者新規作成"""
     tenant_id = session.get('tenant_id')
+    db = SessionLocal()
     
-    if request.method == 'POST':
-        login_id = request.form.get('login_id', '').strip()
-        name = request.form.get('name', '').strip()
-        email = request.form.get('email', '').strip()
-        password = request.form.get('password', '')
-        password_confirm = request.form.get('password_confirm', '')
-        
-        # バリデーション
-        if not login_id or not name or not password:
-            flash('ログインID、氏名、パスワードは必須です', 'error')
-            return render_template('tenant_tenant_admin_new.html')
-        
-        if password != password_confirm:
-            flash('パスワードが一致しません', 'error')
-            return render_template('tenant_tenant_admin_new.html')
-        
-        if len(password) < 8:
-            flash('パスワードは8文字以上にしてください', 'error')
-            return render_template('tenant_tenant_admin_new.html')
-        
-        db = SessionLocal()
-        
-        try:
+    try:
+        if request.method == 'POST':
+            login_id = request.form.get('login_id', '').strip()
+            name = request.form.get('name', '').strip()
+            email = request.form.get('email', '').strip()
+            password = request.form.get('password', '')
+            password_confirm = request.form.get('password_confirm', '')
+            tenant_ids = request.form.getlist('tenant_ids')
+            
+            # 作成元のテナントIDを必ず含める
+            if str(tenant_id) not in tenant_ids:
+                tenant_ids.append(str(tenant_id))
+            
+            # バリデーション
+            if not login_id or not name or not password:
+                flash('ログインID、氏名、パスワードは必須です', 'error')
+                tenants_list = db.query(TTenant).order_by(TTenant.id).all()
+                return render_template('tenant_tenant_admin_new.html', tenants=tenants_list, from_tenant_id=tenant_id)
+            
+            if not tenant_ids:
+                flash('少なくとも1つのテナントを選択してください', 'error')
+                tenants_list = db.query(TTenant).order_by(TTenant.id).all()
+                return render_template('tenant_tenant_admin_new.html', tenants=tenants_list, from_tenant_id=tenant_id)
+            
+            if password != password_confirm:
+                flash('パスワードが一致しません', 'error')
+                tenants_list = db.query(TTenant).order_by(TTenant.id).all()
+                return render_template('tenant_tenant_admin_new.html', tenants=tenants_list, from_tenant_id=tenant_id)
+            
+            if len(password) < 8:
+                flash('パスワードは8文字以上にしてください', 'error')
+                tenants_list = db.query(TTenant).order_by(TTenant.id).all()
+                return render_template('tenant_tenant_admin_new.html', tenants=tenants_list, from_tenant_id=tenant_id)
+            
             # ログインID重複チェック
             existing = db.query(TKanrisha).filter(TKanrisha.login_id == login_id).first()
             if existing:
                 flash(f'ログインID "{login_id}" は既に使用されています', 'error')
-                return render_template('tenant_tenant_admin_new.html')
+                tenants_list = db.query(TTenant).order_by(TTenant.id).all()
+                return render_template('tenant_tenant_admin_new.html', tenants=tenants_list, from_tenant_id=tenant_id)
+            
+            # このテナントに既存の管理者が存在するかチェック
+            existing_admin_count = db.query(TKanrisha).filter(
+                and_(
+                    TKanrisha.role == ROLES["TENANT_ADMIN"],
+                    TKanrisha.tenant_id == tenant_id
+                )
+            ).count()
+            
+            # 最初の管理者の場合は自動的にオーナーにする
+            is_first_admin = (existing_admin_count == 0)
             
             # 管理者作成
             hashed_password = generate_password_hash(password)
@@ -744,18 +768,32 @@ def tenant_admin_new():
                 role=ROLES["TENANT_ADMIN"],
                 tenant_id=tenant_id,
                 active=1,
-                is_owner=0,
+                is_owner=1 if is_first_admin else 0,
                 can_manage_admins=0
             )
             db.add(new_admin)
+            db.flush()  # IDを取得するため
+            
+            # 選択されたテナントとの関連を作成
+            for tenant_id_str in tenant_ids:
+                tenant_id_int = int(tenant_id_str)
+                # 作成元のテナントかつ最初の管理者の場合はオーナーにする
+                is_owner_for_this_tenant = (tenant_id_int == tenant_id and is_first_admin)
+                new_relation = TTenantAdminTenant(
+                    admin_id=new_admin.id,
+                    tenant_id=tenant_id_int,
+                    is_owner=1 if is_owner_for_this_tenant else 0
+                )
+                db.add(new_relation)
             db.commit()
             
             flash(f'管理者 "{name}" を作成しました', 'success')
             return redirect(url_for('tenant_admin.tenant_admins'))
-        finally:
-            db.close()
-    
-    return render_template('tenant_tenant_admin_new.html')
+        
+        tenants = db.query(TTenant).order_by(TTenant.id).all()
+        return render_template('tenant_tenant_admin_new.html', tenants=tenants, from_tenant_id=tenant_id)
+    finally:
+        db.close()
 
 
 @bp.route('/tenant_admins/invite', methods=['GET', 'POST'])
