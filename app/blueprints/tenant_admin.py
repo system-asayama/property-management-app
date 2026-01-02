@@ -1489,7 +1489,11 @@ def employee_invite():
             # バリデーション
             if not login_id or not name:
                 flash('ログインIDと氏名は必須です', 'error')
-                return render_template('tenant_employee_invite.html')
+                # 店舗情報を取得
+                store = db.query(TTenpo).filter(TTenpo.id == store_id).first()
+                # テナント情報を取得
+                tenant = db.query(TTenant).filter(TTenant.id == tenant_id).first()
+                return render_template('tenant_employee_invite.html', store=store, tenant=tenant)
             
             # 店舗がこのテナントに属しているか確認
             store = db.query(TTenpo).filter(
@@ -1498,7 +1502,11 @@ def employee_invite():
             
             if not store:
                 flash('店舗が見つかりません', 'error')
-                return render_template('tenant_employee_invite.html')
+                # 店舗情報を取得
+                store = db.query(TTenpo).filter(TTenpo.id == store_id).first()
+                # テナント情報を取得
+                tenant = db.query(TTenant).filter(TTenant.id == tenant_id).first()
+                return render_template('tenant_employee_invite.html', store=store, tenant=tenant)
             
             # ログインIDと氏名が完全一致する従業員を検索（同一テナント内）
             employee = db.query(TJugyoin).filter(
@@ -1512,7 +1520,11 @@ def employee_invite():
             
             if not employee:
                 flash(f'ログインID"{login_id}"と氏名"{name}"が一致する同一テナント内の従業員が見つかりません', 'error')
-                return render_template('tenant_employee_invite.html')
+                # 店舗情報を取得
+                store = db.query(TTenpo).filter(TTenpo.id == store_id).first()
+                # テナント情報を取得
+                tenant = db.query(TTenant).filter(TTenant.id == tenant_id).first()
+                return render_template('tenant_employee_invite.html', store=store, tenant=tenant)
             
             # 既にこの店舗に所属しているか確認
             existing_relation = db.query(TJugyoinTenpo).filter(
@@ -1524,7 +1536,11 @@ def employee_invite():
             
             if existing_relation:
                 flash(f'"{employee.name}"は既にこの店舗に所属しています', 'error')
-                return render_template('tenant_employee_invite.html')
+                # 店舗情報を取得
+                store = db.query(TTenpo).filter(TTenpo.id == store_id).first()
+                # テナント情報を取得
+                tenant = db.query(TTenant).filter(TTenant.id == tenant_id).first()
+                return render_template('tenant_employee_invite.html', store=store, tenant=tenant)
             
             # 中間テーブルに追加
             new_relation = TJugyoinTenpo(
@@ -1537,7 +1553,15 @@ def employee_invite():
             flash(f'従業員 "{employee.name}" を店舗"{store.名称}"に追加しました', 'success')
             return redirect(url_for('tenant_admin.employees'))
         
-        return render_template('tenant_employee_invite.html')
+        # 店舗情報を取得
+        store = db.query(TTenpo).filter(TTenpo.id == store_id).first()
+        
+        # テナント情報を取得
+        tenant = db.query(TTenant).filter(TTenant.id == tenant_id).first()
+        
+        return render_template('tenant_employee_invite.html',
+                             store=store,
+                             tenant=tenant)
     finally:
         db.close()
 
