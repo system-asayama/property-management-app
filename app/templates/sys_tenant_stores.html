@@ -70,7 +70,10 @@
   }
 </style>
 
-<h1>店舗一覧</h1>
+<div style="margin-bottom:20px">
+  <div style="font-size:1.2em;font-weight:bold;color:#666">{{ tenant.名称 if tenant else 'テナント名' }}</div>
+  <h1 style="margin-top:12px">店舗一覧</h1>
+</div>
 
 <div style="margin-bottom:20px">
   <a class="btn" href="{{ url_for('tenant_admin.store_new') }}">新規作成</a>
