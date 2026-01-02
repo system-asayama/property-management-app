@@ -1469,6 +1469,7 @@ def employee_invite():
 def employee_new():
     """従業員新規作成"""
     tenant_id = session.get('tenant_id')
+    from_store_id = request.args.get('from_store', type=int)  # 作成元の店舗ID
     db = SessionLocal()
     
     try:
@@ -1486,25 +1487,25 @@ def employee_new():
             # バリデーション
             if not login_id or not name or not email:
                 flash('ログインID、氏名、メールアドレスは必須です', 'error')
-                return render_template('tenant_employee_new.html', stores=stores)
+                return render_template('tenant_employee_new.html', stores=stores, from_store_id=from_store_id)
             
             if not store_ids:
                 flash('勤務する店舗を少なくとも1つ選択してください', 'error')
-                return render_template('tenant_employee_new.html', stores=stores)
+                return render_template('tenant_employee_new.html', stores=stores, from_store_id=from_store_id)
             
             if password and password != password_confirm:
                 flash('パスワードが一致しません', 'error')
-                return render_template('tenant_employee_new.html', stores=stores)
+                return render_template('tenant_employee_new.html', stores=stores, from_store_id=from_store_id)
             
             if password and len(password) < 8:
                 flash('パスワードは8文字以上にしてください', 'error')
-                return render_template('tenant_employee_new.html', stores=stores)
+                return render_template('tenant_employee_new.html', stores=stores, from_store_id=from_store_id)
             
             # ログインID重複チェック
             existing = db.query(TJugyoin).filter(TJugyoin.login_id == login_id).first()
             if existing:
                 flash(f'ログインID "{login_id}" は既に使用されています', 'error')
-                return render_template('tenant_employee_new.html', stores=stores)
+                return render_template('tenant_employee_new.html', stores=stores, from_store_id=from_store_id)
             
             # 従業員作成
             hashed_password = generate_password_hash(password) if password else None
@@ -1532,7 +1533,7 @@ def employee_new():
             flash(f'従業員 "{name}" を作成しました', 'success')
             return redirect(url_for('tenant_admin.employees'))
         
-        return render_template('tenant_employee_new.html', stores=stores)
+        return render_template('tenant_employee_new.html', stores=stores, from_store_id=from_store_id)
     finally:
         db.close()
 

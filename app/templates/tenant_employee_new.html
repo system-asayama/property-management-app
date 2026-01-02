@@ -35,10 +35,18 @@
         <div style="border:1px solid #ccc;padding:12px;max-height:200px;overflow-y:auto">
           {% for store in stores %}
           <div style="margin-bottom:8px">
+            {% if from_store_id and store.id == from_store_id %}
+            <label style="display:flex;align-items:center;cursor:not-allowed;opacity:0.6">
+              <input type="checkbox" name="store_ids" value="{{ store.id }}" checked disabled style="margin-right:8px">
+              <span>{{ store.名称 }} <small style="color:#666">(作成元)</small></span>
+            </label>
+            <input type="hidden" name="store_ids" value="{{ store.id }}">
+            {% else %}
             <label style="display:flex;align-items:center;cursor:pointer">
               <input type="checkbox" name="store_ids" value="{{ store.id }}" style="margin-right:8px">
               <span>{{ store.名称 }}</span>
             </label>
+            {% endif %}
           </div>
           {% endfor %}
         </div>
