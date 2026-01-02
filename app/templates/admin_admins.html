@@ -49,12 +49,22 @@
     .admin-card-row.stores-row {
       flex-direction: row;
       align-items: flex-start;
+      flex-wrap: wrap;
     }
     
     .admin-card-row.stores-row .admin-card-value {
       text-align: left;
-      display: flex;
-      flex-direction: column;
+      display: inline;
+      flex: 1;
+    }
+    
+    .admin-card-row.stores-row .admin-card-value span:first-child {
+      display: inline;
+    }
+    
+    .admin-card-row.stores-row .admin-card-value span:not(:first-child) {
+      display: block;
+      margin-left: 100px;
     }
     
     .admin-card-actions {

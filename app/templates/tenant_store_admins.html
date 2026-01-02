@@ -90,11 +90,15 @@
     }
     
     .admin-table td[data-label="所属店舗: "]::before {
-      display: block;
-      margin-bottom: 4px;
+      display: inline-block;
     }
     
-    .admin-table td[data-label="所属店舗: "] span {
+    .admin-table td[data-label="所属店舗: "] span:first-child {
+      display: inline;
+    }
+    
+    .admin-table td[data-label="所属店舗: "] span:not(:first-child) {
+      display: block;
       margin-left: 100px;
     }
     
