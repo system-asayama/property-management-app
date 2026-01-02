@@ -8,7 +8,7 @@ import sys
 # アプリケーションのルートディレクトリをパスに追加
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from app.utils.db import get_db_connection, _sql, _is_pg
+from app.utils.db import get_db_connection, _is_pg
 
 def run_migrations():
     """マイグレーションを実行"""
