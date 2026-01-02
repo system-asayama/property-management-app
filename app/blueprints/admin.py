@@ -124,14 +124,21 @@ def mypage():
             tenant_obj = db.query(TTenant).filter(TTenant.id == tenant_id).first()
             tenant_name = tenant_obj.名称 if tenant_obj else '不明'
         
-        # 所属店舗リストを取得（管理者が管理する店舗）
-        store_objs = db.query(TTenpo).join(
+        # 所属店舗リストを取得（管理者が管理する店舗、オーナー情報も取得）
+        store_rels = db.query(TTenpo, TKanrishaTenpo).join(
             TKanrishaTenpo, TKanrishaTenpo.store_id == TTenpo.id
         ).filter(
             TKanrishaTenpo.admin_id == user_id
         ).order_by(TTenpo.名称).all()
-        stores = [s.名称 for s in store_objs]
-        store_list = [{'id': s.id, 'name': s.名称} for s in store_objs]
+        
+        stores = []
+        store_list = []
+        for store, rel in store_rels:
+            store_name = store.名称
+            if rel.is_owner:
+                store_name += '（オーナー）'
+            stores.append(store_name)
+            store_list.append({'id': store.id, 'name': store.名称})
         
         # POSTリクエスト（プロフィール編集またはパスワード変更）
         if request.method == 'POST':
