@@ -1719,7 +1719,7 @@ def tenant_stores(tid):
         
         tenant_data = {
             'id': tenant.id,
-            'name': tenant.名称,
+            '名称': tenant.名称,
             'slug': tenant.slug
         }
         
@@ -1859,7 +1859,7 @@ def tenant_store_detail(tid, sid):
         
         tenant_data = {
             'id': tenant.id,
-            'name': tenant.名称,
+            '名称': tenant.名称,
             'slug': tenant.slug
         }
         
