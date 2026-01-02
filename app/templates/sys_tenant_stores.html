@@ -111,6 +111,17 @@
     </div>
     
     <div class="store-card-field">
+      <span class="store-card-label">有効:</span>
+      <span class="store-card-value">
+        {% if store.active == 1 %}
+          <span style="color:#2e7d32">✓ 有効</span>
+        {% else %}
+          <span style="color:#d32f2f">× 無効</span>
+        {% endif %}
+      </span>
+    </div>
+    
+    <div class="store-card-field">
       <span class="store-card-label">作成日時:</span>
       <span class="store-card-value">{{ store.created_at.strftime('%Y-%m-%d %H:%M:%S.%f') if store.created_at else '-' }}</span>
     </div>

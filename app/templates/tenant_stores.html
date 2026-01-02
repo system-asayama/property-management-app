@@ -137,6 +137,7 @@
         <th>店舗ID</th>
         <th>名称</th>
         <th>Slug</th>
+        <th>有効</th>
         <th>作成日時</th>
         <th>更新日時</th>
         <th>操作</th>
@@ -150,6 +151,13 @@
           <a href="{{ url_for('tenant_admin.store_detail', store_id=store.id) }}">{{ store['名称'] }}</a>
         </td>
         <td data-label="Slug: " class="store-slug"><code>{{ store.slug }}</code></td>
+        <td data-label="有効: ">
+          {% if store.active == 1 %}
+            <span style="color:#2e7d32">✓ 有効</span>
+          {% else %}
+            <span style="color:#d32f2f">× 無効</span>
+          {% endif %}
+        </td>
         <td data-label="作成日時: " class="store-date">{{ store.created_at }}</td>
         <td data-label="更新日時: " class="store-date">{{ store.updated_at }}</td>
         <td class="store-actions">
