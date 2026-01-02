@@ -1992,6 +1992,12 @@ def store_admin_edit(admin_id):
             TKanrishaTenpo.admin_id == admin_id
         ).all()]
         
+        # オーナー店舗のマップを作成（store_id -> is_owner）
+        store_owner_map = {}
+        for rel in db.query(TKanrishaTenpo).filter(TKanrishaTenpo.admin_id == admin_id).all():
+            if rel.is_owner == 1:
+                store_owner_map[rel.store_id] = 1
+        
         if request.method == 'POST':
             try:
                 login_id = request.form.get('login_id', '').strip()
@@ -2009,14 +2015,16 @@ def store_admin_edit(admin_id):
                     return render_template('tenant_admin_edit.html', 
                                          admin=admin,
                                          stores=stores,
-                                         admin_store_ids=admin_store_ids)
+                                         admin_store_ids=admin_store_ids,
+                                         store_owner_map=store_owner_map)
                 
                 if not store_ids:
                     flash('少なくとも1つの店舗を選択してください', 'error')
                     return render_template('tenant_admin_edit.html', 
                                          admin=admin,
                                          stores=stores,
-                                         admin_store_ids=admin_store_ids)
+                                         admin_store_ids=admin_store_ids,
+                                         store_owner_map=store_owner_map)
                 
                 # ログインIDの重複チェック
                 existing = db.query(TKanrisha).filter(
@@ -2027,7 +2035,8 @@ def store_admin_edit(admin_id):
                     return render_template('tenant_admin_edit.html', 
                                          admin=admin,
                                          stores=stores,
-                                         admin_store_ids=admin_store_ids)
+                                         admin_store_ids=admin_store_ids,
+                                         store_owner_map=store_owner_map)
                 
                 # オーナーかどうかを確認
                 is_owner = db.query(TKanrishaTenpo).filter(
@@ -2040,7 +2049,8 @@ def store_admin_edit(admin_id):
                     return render_template('tenant_admin_edit.html', 
                                          admin=admin,
                                          stores=stores,
-                                         admin_store_ids=admin_store_ids)
+                                         admin_store_ids=admin_store_ids,
+                                         store_owner_map=store_owner_map)
                 
                 # 役割変更の処理
                 old_role = admin.role
@@ -2145,12 +2155,14 @@ def store_admin_edit(admin_id):
                 return render_template('tenant_admin_edit.html', 
                                      admin=admin,
                                      stores=stores,
-                                     admin_store_ids=admin_store_ids)
+                                     admin_store_ids=admin_store_ids,
+                                     store_owner_map=store_owner_map)
         
         return render_template('tenant_admin_edit.html', 
                              admin=admin,
                              stores=stores,
-                             admin_store_ids=admin_store_ids)
+                             admin_store_ids=admin_store_ids,
+                             store_owner_map=store_owner_map)
     finally:
         db.close()
 

@@ -65,7 +65,12 @@
         <td style="border:1px solid #ccc;padding:8px;width:40px;text-align:center">
           <input type="checkbox" name="store_ids" value="{{ store.id }}" {% if store.id in admin_store_ids %}checked{% endif %}>
         </td>
-        <td style="border:1px solid #ccc;padding:8px">{{ store.名称 }}</td>
+        <td style="border:1px solid #ccc;padding:8px">
+          {{ store.名称 }}
+          {% if store_owner_map.get(store.id) == 1 %}
+            <span style="color:#ff9800;font-weight:bold;margin-left:8px">★ オーナー</span>
+          {% endif %}
+        </td>
       </tr>
       {% endfor %}
     </table>
@@ -99,6 +104,16 @@
   </div>
 
   <div class="form-group" style="padding:16px;background:#f9f9f9;border-radius:8px">
+    {% if store_owner_map %}
+    <label style="display:flex;align-items:center;cursor:not-allowed;margin:0;opacity:0.6">
+      <input name="can_manage_admins" type="checkbox" value="1" checked disabled style="width:auto;margin-right:8px">
+      <span style="font-weight:normal">管理者管理権限</span>
+    </label>
+    <input type="hidden" name="can_manage_admins" value="1">
+    <div class="small" style="color:#666;margin-top:4px;margin-left:28px">
+      ※ オーナーは常に管理者管理権限を持ちます
+    </div>
+    {% else %}
     <label style="display:flex;align-items:center;cursor:pointer;margin:0">
       <input name="can_manage_admins" type="checkbox" value="1"
              {% if admin.can_manage_admins == 1 %}checked{% endif %}
@@ -108,6 +123,7 @@
     <div class="small" style="color:#666;margin-top:4px;margin-left:28px">
       チェックを入れるとこの店舗管理者は他の店舗管理者を管理できるようになります。
     </div>
+    {% endif %}
   </div>
   
   <div class="actions">
