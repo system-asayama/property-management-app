@@ -423,6 +423,13 @@ def store_new():
     """店舗新規作成"""
     tenant_id = session.get('tenant_id')
     
+    # テナント情報を取得
+    db_tenant = SessionLocal()
+    try:
+        tenant = db_tenant.query(TTenant).filter(TTenant.id == tenant_id).first()
+    finally:
+        db_tenant.close()
+    
     if request.method == 'POST':
         name = request.form.get('name', '').strip()
         slug = request.form.get('slug', '').strip()
@@ -434,7 +441,7 @@ def store_new():
         
         if not name or not slug:
             flash('名称とslugは必須です', 'error')
-            return render_template('tenant_store_new.html')
+            return render_template('tenant_store_new.html', tenant=tenant)
         
         db = SessionLocal()
         
@@ -445,7 +452,7 @@ def store_new():
             ).first()
             if existing:
                 flash(f'slug "{slug}" は既に使用されています', 'error')
-                return render_template('tenant_store_new.html')
+                return render_template('tenant_store_new.html', tenant=tenant)
             
             # 店舗作成
             new_store = TTenpo(
@@ -467,7 +474,7 @@ def store_new():
         finally:
             db.close()
     
-    return render_template('tenant_store_new.html')
+    return render_template('tenant_store_new.html', tenant=tenant)
 
 
 @bp.route('/stores/<int:store_id>')
