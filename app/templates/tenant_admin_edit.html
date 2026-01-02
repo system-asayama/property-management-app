@@ -20,7 +20,7 @@
     <input type="email" id="email" name="email" value="{{ admin.email or '' }}" placeholder="例）admin@example.com">
   </div>
   
-  {% if admin.is_owner == 1 %}
+  {% if store_owner_map %}
   <div class="form-group">
     <label for="role">役割</label>
     <input type="text" value="店舗管理者（オーナー）" readonly style="background-color:#f5f5f5">
@@ -49,7 +49,7 @@
     <input type="password" id="password_confirm" name="password_confirm" placeholder="もう一度入力">
   </div>
   
-  {% if admin.is_owner == 1 %}
+  {% if store_owner_map %}
   <div class="form-group">
     <p style="color:#ff6f00;font-weight:bold">★ オーナー権限あり</p>
     <small style="color:#666">オーナー権限の移譲は一覧画面から行ってください。</small>
@@ -81,7 +81,7 @@
   </div>
   
   <div class="form-group" style="padding:16px;background:#f9f9f9;border-radius:8px">
-    {% if admin.is_owner == 1 %}
+    {% if store_owner_map %}
     <label style="display:flex;align-items:center;cursor:not-allowed;margin:0;opacity:0.6">
       <input name="active" type="checkbox" value="1" checked disabled style="width:auto;margin-right:8px">
       <span style="font-weight:normal">有効</span>
