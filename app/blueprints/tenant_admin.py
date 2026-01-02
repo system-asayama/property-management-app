@@ -1971,7 +1971,7 @@ def store_admin_edit(admin_id):
     
     if not can_manage_tenant_admins():
         flash('店舗管理者を編集する権限がありません', 'error')
-        return redirect(url_for('tenant_admin.admins'))
+        return redirect(url_for('tenant_admin.store_admins'))
     
     db = SessionLocal()
     
@@ -1982,7 +1982,7 @@ def store_admin_edit(admin_id):
         
         if not admin:
             flash('管理者が見つかりません', 'error')
-            return redirect(url_for('tenant_admin.admins'))
+            return redirect(url_for('tenant_admin.store_admins'))
         
         # テナントの全店舗を取得
         stores = db.query(TTenpo).filter(TTenpo.tenant_id == tenant_id).order_by(TTenpo.id).all()
@@ -2235,7 +2235,7 @@ def store_admin_toggle_manage_permission(admin_id):
         
         if not admin:
             flash('管理者が見つかりません', 'error')
-            return redirect(url_for('tenant_admin.admins'))
+            return redirect(url_for('tenant_admin.store_admins'))
         
         # オーナーの権限は変更できない
         if admin.is_owner == 1:
