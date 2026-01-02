@@ -69,7 +69,10 @@
   }
 </style>
 
-<h1>テナント詳細情報</h1>
+<div style="margin-bottom:20px">
+  <div style="font-size:1.2em;font-weight:bold;color:#666">{{ tenant.name if tenant else 'テナント名' }}</div>
+  <h1 style="margin-top:12px">テナント詳細情報</h1>
+</div>
 
 <div class="tenant-card">
   <div class="tenant-info-row">
