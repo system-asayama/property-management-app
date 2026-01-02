@@ -2062,6 +2062,7 @@ def store_admin_edit(admin_id):
                 admin.email = email
                 admin.role = new_role
                 admin.active = active
+                admin.can_manage_admins = can_manage_admins
                 
                 if password:
                     admin.password_hash = generate_password_hash(password)
