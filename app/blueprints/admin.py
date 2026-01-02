@@ -372,13 +372,13 @@ def employee_new():
         # ユーザーのロールを確認
         user_role = session.get('role')
         
-        # システム管理者の場合は、選択した店舗のテナントに属するすべての店舗を取得
-        if user_role == 'system_admin':
+        # テナント管理者またはシステム管理者の場合は、テナントに属するすべての店舗を取得
+        if user_role in ['system_admin', 'tenant_admin']:
             stores_list = db.query(TTenpo).filter(
                 TTenpo.tenant_id == tenant_id
             ).order_by(TTenpo.id).all()
         else:
-            # 管理者が管理する店舗一覧を取得
+            # 店舗管理者の場合は、管理する店舗一覧を取得
             stores_list = db.query(TTenpo).join(
                 TKanrishaTenpo, TTenpo.id == TKanrishaTenpo.store_id
             ).filter(
