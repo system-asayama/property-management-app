@@ -159,11 +159,12 @@
         <td data-label="所属店舗: ">
           {% if a.stores %}
             {% for store in a.stores %}
-              {{ store.name }}
-              {% if store.is_owner %}
-                <span style="color:#ff9800;font-weight:bold;margin-left:4px">★ オーナー</span>
-              {% endif %}
-              {% if not loop.last %}<br>{% endif %}
+              <span style="display:block;padding-left:16px">
+                {{ store.name }}
+                {% if store.is_owner %}
+                  <span style="color:#ff9800;font-weight:bold;margin-left:4px">★ オーナー</span>
+                {% endif %}
+              </span>
             {% endfor %}
           {% else %}
             <span style="color:#999">未設定</span>

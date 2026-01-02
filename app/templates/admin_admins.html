@@ -115,11 +115,12 @@
       <td style="padding:8px;white-space:normal">
         {% if admin.stores %}
           {% for store in admin.stores %}
-            {{ store.name }}
-            {% if store.is_owner %}
-              <span style="color:#ff9800;font-weight:bold;margin-left:4px">★ オーナー</span>
-            {% endif %}
-            {% if not loop.last %}<br>{% endif %}
+            <span style="display:block">
+              {{ store.name }}
+              {% if store.is_owner %}
+                <span style="color:#ff9800;font-weight:bold;margin-left:4px">★ オーナー</span>
+              {% endif %}
+            </span>
           {% endfor %}
         {% else %}
           <span style="color:#999">-</span>
@@ -184,11 +185,12 @@
       <span class="admin-card-value">
         {% if admin.stores %}
           {% for store in admin.stores %}
-            {{ store.name }}
-            {% if store.is_owner %}
-              <span style="color:#ff9800;font-weight:bold;margin-left:4px">★ オーナー</span>
-            {% endif %}
-            {% if not loop.last %}<br>{% endif %}
+            <span style="display:block;padding-left:16px">
+              {{ store.name }}
+              {% if store.is_owner %}
+                <span style="color:#ff9800;font-weight:bold;margin-left:4px">★ オーナー</span>
+              {% endif %}
+            </span>
           {% endfor %}
         {% else %}
           <span style="color:#999">-</span>
