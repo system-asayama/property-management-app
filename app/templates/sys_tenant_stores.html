@@ -2,6 +2,15 @@
 {% block title %}店舗一覧 - {{ tenant.name }}{% endblock %}
 {% block content %}
 <style>
+  .store-name-link {
+    color: #333;
+    text-decoration: none;
+    font-weight: bold;
+  }
+  .store-name-link:hover {
+    text-decoration: underline;
+    color: #007bff;
+  }
   @media (max-width: 768px) {
     .store-table {
       display: none;
@@ -92,7 +101,7 @@
     <tr class="store-row" data-name="{{ store.name }}" data-slug="{{ store.slug }}" 
         style="border-bottom:1px solid #eee">
       <td style="padding:12px">{{ store.id }}</td>
-      <td style="padding:12px"><strong>{{ store.name }}</strong></td>
+      <td style="padding:12px"><a href="{{ url_for('system_admin.tenant_store_detail', tid=tenant.id, sid=store.id) }}" class="store-name-link">{{ store.name }}</a></td>
       <td style="padding:12px"><code>{{ store.slug }}</code></td>
       <td style="padding:12px">
         {% if store.active == 1 %}
@@ -125,7 +134,7 @@
     </div>
     <div class="store-card-row">
       <div class="store-card-label">名称:</div>
-      <div class="store-card-value"><strong>{{ store.name }}</strong></div>
+      <div class="store-card-value"><a href="{{ url_for('system_admin.tenant_store_detail', tid=tenant.id, sid=store.id) }}" class="store-name-link">{{ store.name }}</a></div>
     </div>
     <div class="store-card-row">
       <div class="store-card-label">Slug:</div>
