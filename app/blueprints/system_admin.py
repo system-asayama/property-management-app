@@ -631,7 +631,8 @@ def tenant_admin_new(tid):
             email = request.form.get('email', '').strip()
             password = request.form.get('password', '')
             password_confirm = request.form.get('password_confirm', '')
-            active = int(request.form.get('active', 1))
+            # 新規作成時は常に有効
+            active = 1
             tenant_ids = request.form.getlist('tenant_ids')
             
             # 作成元のテナントIDを必ず含める
