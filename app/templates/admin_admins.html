@@ -46,6 +46,16 @@
       flex: 1;
     }
     
+    .admin-card-row.stores-row {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    
+    .admin-card-row.stores-row .admin-card-value {
+      text-align: left;
+      margin-top: 4px;
+    }
+    
     .admin-card-actions {
       margin-top: 12px;
       padding-top: 12px;
@@ -169,7 +179,7 @@
       <span class="admin-card-label">メールアドレス:</span>
       <span class="admin-card-value">{{ admin.email if admin.email else '-' }}</span>
     </div>
-    <div class="admin-card-row">
+    <div class="admin-card-row stores-row">
       <span class="admin-card-label">所属店舗:</span>
       <span class="admin-card-value">
         {% if admin.stores %}
