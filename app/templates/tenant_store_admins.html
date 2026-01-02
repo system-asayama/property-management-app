@@ -89,8 +89,18 @@
       color: #374151;
     }
     
+    .admin-table td[data-label="所属店舗: "] {
+      position: relative;
+    }
+    
     .admin-table td[data-label="所属店舗: "]::before {
       display: inline-block;
+      position: absolute;
+      left: 0;
+    }
+    
+    .admin-table td[data-label="所属店舗: "] span {
+      margin-left: 100px;
     }
     
     .admin-table td[data-label="所属店舗: "] span:first-child {
@@ -99,7 +109,6 @@
     
     .admin-table td[data-label="所属店舗: "] span:not(:first-child) {
       display: block;
-      margin-left: 100px;
     }
     
     .admin-table td.admin-actions {

@@ -50,21 +50,27 @@
       flex-direction: row;
       align-items: flex-start;
       flex-wrap: wrap;
+      position: relative;
+    }
+    
+    .admin-card-row.stores-row .admin-card-label {
+      position: absolute;
+      left: 0;
     }
     
     .admin-card-row.stores-row .admin-card-value {
       text-align: left;
       display: inline;
       flex: 1;
+      margin-left: 100px;
+    }
+    
+    .admin-card-row.stores-row .admin-card-value span {
+      display: block;
     }
     
     .admin-card-row.stores-row .admin-card-value span:first-child {
       display: inline !important;
-    }
-    
-    .admin-card-row.stores-row .admin-card-value span:not(:first-child) {
-      display: block;
-      margin-left: 100px;
     }
     
     .admin-card-actions {
