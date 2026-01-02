@@ -130,6 +130,9 @@ def create_app() -> Flask:
     # データベーステーブル作成
     try:
         from .db import Base, engine
+        # モデルをインポートしてBaseに登録
+        from . import models_login  # noqa: F401
+        from . import models_auth  # noqa: F401
         Base.metadata.create_all(bind=engine)
         print("✅ データベーステーブル作成完了")
     except Exception as e:
