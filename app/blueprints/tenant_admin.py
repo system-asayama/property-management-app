@@ -2508,24 +2508,45 @@ def employee_edit(employee_id):
             # バリデーション
             if not name or not email:
                 flash('氏名、メールアドレスは必須です', 'error')
+                # 店舗情報を取得
+                store_id = session.get('store_id')
+                store = db.query(TTenpo).filter(TTenpo.id == store_id).first() if store_id else None
+                # テナント情報を取得
+                tenant = db.query(TTenant).filter(TTenant.id == tenant_id).first()
                 return render_template('tenant_employee_edit.html', 
                                      employee=employee,
                                      stores=stores,
-                                     employee_store_ids=employee_store_ids)
+                                     employee_store_ids=employee_store_ids,
+                                     store=store,
+                                     tenant=tenant)
             
             if password and password != password_confirm:
                 flash('パスワードが一致しません', 'error')
+                # 店舗情報を取得
+                store_id = session.get('store_id')
+                store = db.query(TTenpo).filter(TTenpo.id == store_id).first() if store_id else None
+                # テナント情報を取得
+                tenant = db.query(TTenant).filter(TTenant.id == tenant_id).first()
                 return render_template('tenant_employee_edit.html', 
                                      employee=employee,
                                      stores=stores,
-                                     employee_store_ids=employee_store_ids)
+                                     employee_store_ids=employee_store_ids,
+                                     store=store,
+                                     tenant=tenant)
             
             if password and len(password) < 8:
                 flash('パスワードは8文字以上にしてください', 'error')
+                # 店舗情報を取得
+                store_id = session.get('store_id')
+                store = db.query(TTenpo).filter(TTenpo.id == store_id).first() if store_id else None
+                # テナント情報を取得
+                tenant = db.query(TTenant).filter(TTenant.id == tenant_id).first()
                 return render_template('tenant_employee_edit.html', 
                                      employee=employee,
                                      stores=stores,
-                                     employee_store_ids=employee_store_ids)
+                                     employee_store_ids=employee_store_ids,
+                                     store=store,
+                                     tenant=tenant)
             
             # 役割変更の処理
             old_role = employee.role
@@ -2618,10 +2639,19 @@ def employee_edit(employee_id):
             db.commit()
             return redirect(url_for('tenant_admin.employees'))
         
+        # 店舗情報を取得（現在選択中の店舗）
+        store_id = session.get('store_id')
+        store = db.query(TTenpo).filter(TTenpo.id == store_id).first() if store_id else None
+        
+        # テナント情報を取得
+        tenant = db.query(TTenant).filter(TTenant.id == tenant_id).first()
+        
         return render_template('tenant_employee_edit.html', 
                              employee=employee,
                              stores=stores,
-                             employee_store_ids=employee_store_ids)
+                             employee_store_ids=employee_store_ids,
+                             store=store,
+                             tenant=tenant)
     finally:
         db.close()
 @bp.route('/employees/<int:employee_id>/delete', methods=['POST'])
