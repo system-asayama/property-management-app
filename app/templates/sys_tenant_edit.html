@@ -1,7 +1,10 @@
 {% extends "base.html" %}
 {% block title %}テナント編集{% endblock %}
 {% block content %}
-<h2>テナント編集</h2>
+<div style="margin-bottom:20px">
+  <div style="font-size:1.2em;font-weight:bold;color:#666">{{ tenant.名称 if tenant else 'テナント名' }}</div>
+  <h1 style="margin-top:12px">テナント編集</h1>
+</div>
 
 <div class="card" style="max-width:640px">
   <form method="post" autocomplete="off">
