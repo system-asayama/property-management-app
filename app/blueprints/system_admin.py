@@ -643,29 +643,29 @@ def tenant_admin_new(tid):
             if not login_id or not name or not password:
                 flash('ログインID、氏名、パスワードは必須です', 'error')
                 tenants_list = db.query(TTenant).order_by(TTenant.id).all()
-                return render_template('sys_tenant_admin_new.html', tenants=tenants_list, from_tenant_id=tid)
+                return render_template('sys_tenant_admin_new.html', tenant=tenant_obj, tenants=tenants_list, from_tenant_id=tid)
             
             if not tenant_ids:
                 flash('少なくとも1つのテナントを選択してください', 'error')
                 tenants_list = db.query(TTenant).order_by(TTenant.id).all()
-                return render_template('sys_tenant_admin_new.html', tenants=tenants_list, from_tenant_id=tid)
+                return render_template('sys_tenant_admin_new.html', tenant=tenant_obj, tenants=tenants_list, from_tenant_id=tid)
             
             if password != password_confirm:
                 flash('パスワードが一致しません', 'error')
                 tenants_list = db.query(TTenant).order_by(TTenant.id).all()
-                return render_template('sys_tenant_admin_new.html', tenants=tenants_list, from_tenant_id=tid)
+                return render_template('sys_tenant_admin_new.html', tenant=tenant_obj, tenants=tenants_list, from_tenant_id=tid)
             
             if len(password) < 8:
                 flash('パスワードは8文字以上にしてください', 'error')
                 tenants_list = db.query(TTenant).order_by(TTenant.id).all()
-                return render_template('sys_tenant_admin_new.html', tenants=tenants_list, from_tenant_id=tid)
+                return render_template('sys_tenant_admin_new.html', tenant=tenant_obj, tenants=tenants_list, from_tenant_id=tid)
             
             # ログインID重複チェック
             existing = db.query(TKanrisha).filter(TKanrisha.login_id == login_id).first()
             if existing:
                 flash(f'ログインID "{login_id}" は既に使用されています', 'error')
                 tenants_list = db.query(TTenant).order_by(TTenant.id).all()
-                return render_template('sys_tenant_admin_new.html', tenants=tenants_list, from_tenant_id=tid)
+                return render_template('sys_tenant_admin_new.html', tenant=tenant_obj, tenants=tenants_list, from_tenant_id=tid)
             
             # このテナントに既存の管理者が存在するかチェック
             existing_admin_count = db.query(TKanrisha).filter(
@@ -711,7 +711,7 @@ def tenant_admin_new(tid):
             return redirect(url_for('system_admin.tenant_admins', tid=tid))
         
         tenants = db.query(TTenant).order_by(TTenant.id).all()
-        return render_template('sys_tenant_admin_new.html', tenants=tenants, from_tenant_id=tid)
+        return render_template('sys_tenant_admin_new.html', tenant=tenant_obj, tenants=tenants, from_tenant_id=tid)
     finally:
         db.close()
 
