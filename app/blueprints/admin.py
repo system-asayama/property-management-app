@@ -309,14 +309,20 @@ def admins():
         for rel in admin_relations:
             admin = db.query(TKanrisha).filter(TKanrisha.id == rel.admin_id).first()
             if admin:
-                # この管理者がオーナーである店舗を取得
-                owner_stores = db.query(TTenpo).join(
+                # この管理者が所属する店舗を取得
+                store_rels = db.query(TTenpo, TKanrishaTenpo).join(
                     TKanrishaTenpo, TTenpo.id == TKanrishaTenpo.store_id
                 ).filter(
-                    TKanrishaTenpo.admin_id == admin.id,
-                    TKanrishaTenpo.is_owner == 1
-                ).all()
-                owner_store_names = [store.名称 for store in owner_stores]
+                    TKanrishaTenpo.admin_id == admin.id
+                ).order_by(TTenpo.名称).all()
+                
+                # 所属店舗の名称とオーナー情報を取得
+                stores_with_owner = []
+                for store, store_rel in store_rels:
+                    stores_with_owner.append({
+                        'name': store.名称,
+                        'is_owner': store_rel.is_owner == 1
+                    })
                 
                 admins_data.append({
                     'id': admin.id,
@@ -325,7 +331,7 @@ def admins():
                     'email': admin.email,
                     'active': admin.active,
                     'is_owner': rel.is_owner,
-                    'owner_store_names': owner_store_names,
+                    'stores': stores_with_owner,
                     'can_manage_admins': rel.can_manage_admins,
                     'created_at': admin.created_at.strftime('%Y-%m-%d %H:%M:%S') if admin.created_at else '-'
                 })

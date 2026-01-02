@@ -89,7 +89,7 @@
       <th style="padding:8px;text-align:left;white-space:nowrap">ログインID</th>
       <th style="padding:8px;text-align:left;white-space:nowrap">氏名</th>
       <th style="padding:8px;text-align:left;white-space:nowrap">メールアドレス</th>
-      <th style="padding:8px;text-align:left;white-space:nowrap">オーナー</th>
+      <th style="padding:8px;text-align:left;white-space:nowrap">所属店舗</th>
       <th style="padding:8px;text-align:center;white-space:nowrap">ステータス</th>
       <th style="padding:8px;text-align:left;white-space:nowrap">作成日時</th>
       <th style="padding:8px;text-align:left;white-space:nowrap">操作</th>
@@ -102,11 +102,14 @@
       <td style="padding:8px;white-space:nowrap"><code>{{ admin.login_id }}</code></td>
       <td style="padding:8px;white-space:nowrap"><strong>{{ admin.name }}</strong></td>
       <td style="padding:8px;white-space:nowrap">{{ admin.email if admin.email else '-' }}</td>
-      <td style="padding:8px;white-space:nowrap">
-        {% if admin.owner_store_names %}
-          <span style="color:#ff6f00;font-weight:bold">★ オーナー</span>
-          {% for store_name in admin.owner_store_names %}
-            <br><span style="color:#666;font-size:0.9em">（{{ store_name }}）</span>
+      <td style="padding:8px">
+        {% if admin.stores %}
+          {% for store in admin.stores %}
+            {{ store.name }}
+            {% if store.is_owner %}
+              <span style="color:#ff9800;font-weight:bold;margin-left:4px">★ オーナー</span>
+            {% endif %}
+            {% if not loop.last %}<br>{% endif %}
           {% endfor %}
         {% else %}
           <span style="color:#999">-</span>
@@ -167,12 +170,15 @@
       <span class="admin-card-value">{{ admin.email if admin.email else '-' }}</span>
     </div>
     <div class="admin-card-row">
-      <span class="admin-card-label">オーナー:</span>
+      <span class="admin-card-label">所属店舗:</span>
       <span class="admin-card-value">
-        {% if admin.owner_store_names %}
-          <span style="color:#ff6f00;font-weight:bold">★ オーナー</span>
-          {% for store_name in admin.owner_store_names %}
-            <br><span style="color:#666;font-size:0.9em">（{{ store_name }}）</span>
+        {% if admin.stores %}
+          {% for store in admin.stores %}
+            {{ store.name }}
+            {% if store.is_owner %}
+              <span style="color:#ff9800;font-weight:bold;margin-left:4px">★ オーナー</span>
+            {% endif %}
+            {% if not loop.last %}<br>{% endif %}
           {% endfor %}
         {% else %}
           <span style="color:#999">-</span>
