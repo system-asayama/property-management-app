@@ -33,6 +33,10 @@
     white-space: nowrap;
   }
   
+  .employee-table td[data-label="所属店舗: "] {
+    white-space: normal;
+  }
+  
   .employee-table .btn.small {
     font-size: 0.9em;
     padding: 4px 8px;
@@ -96,10 +100,36 @@
     .employee-table td.employee-actions form {
       display: inline-block;
     }
+    
+    .employee-table td[data-label="所属店舗: "] {
+      position: relative;
+    }
+    
+    .employee-table td[data-label="所属店舗: "]::before {
+      display: inline-block;
+      position: absolute;
+      left: 0;
+    }
+    
+    .employee-table td[data-label="所属店舗: "] span {
+      margin-left: 100px;
+    }
+    
+    .employee-table td[data-label="所属店舗: "] span:first-child {
+      display: inline !important;
+    }
+    
+    .employee-table td[data-label="所属店舗: "] span:not(:first-child) {
+      display: block;
+    }
   }
 </style>
 
-<h1>従業員一覧</h1>
+<div style="margin-bottom:20px">
+  <div style="font-size:1.2em;font-weight:bold;color:#666">{{ tenant.名称 if tenant else 'テナント名' }}</div>
+  <div style="font-size:1.1em;font-weight:bold;color:#888;margin-top:4px">{{ store.名称 if store else '店舗名' }}</div>
+  <h1 style="margin-top:12px">従業員一覧</h1>
+</div>
 
 <div style="margin-bottom:20px">
   <a class="btn" href="{{ url_for('tenant_admin.employee_new') }}">新規作成</a>
@@ -136,7 +166,15 @@
         <td data-label="ID: ">{{ e.id }}</td>
         <td data-label="ログインID: "><code>{{ e.login_id }}</code></td>
         <td data-label="氏名: "><strong>{{ e.name }}</strong></td>
-        <td data-label="所属店舗: " style="color:#666">{{ e.stores }}</td>
+        <td data-label="所属店舗: " style="color:#666">
+          {% if e.stores %}
+            {% for store in e.stores %}
+              <span style="display:block">{{ store.name }}</span>
+            {% endfor %}
+          {% else %}
+            <span>未設定</span>
+          {% endif %}
+        </td>
         <td data-label="有効: ">
           {% if e.active %}
             <span style="color:#4caf50;font-weight:bold">✓ 有効</span>

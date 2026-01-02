@@ -1433,11 +1433,11 @@ def employees():
                 TJugyoinTenpo.employee_id == e.id
             ).all()
             
-            store_names = []
+            stores_list = []
             for rel in store_relations:
                 store = db.query(TTenpo).filter(TTenpo.id == rel.store_id).first()
                 if store:
-                    store_names.append(store.名称)
+                    stores_list.append({'name': store.名称})
             
             employees_data.append({
                 'id': e.id,
@@ -1445,10 +1445,21 @@ def employees():
                 'name': e.name,
                 'email': e.email,
                 'active': e.active,
-                'stores': ', '.join(store_names) if store_names else '未設定'
+                'stores': stores_list
             })
         
-        return render_template('tenant_employees.html', employees=employees_data)
+        # 店舗情報を取得
+        store = None
+        if store_id:
+            store = db.query(TTenpo).filter(TTenpo.id == store_id).first()
+        
+        # テナント情報を取得
+        tenant = db.query(TTenant).filter(TTenant.id == tenant_id).first()
+        
+        return render_template('tenant_employees.html', 
+                             employees=employees_data,
+                             store=store,
+                             tenant=tenant)
     finally:
         db.close()
 
