@@ -1195,9 +1195,13 @@ def store_admins():
         # 店舗情報を取得
         store = db.query(TTenpo).filter(TTenpo.id == store_id).first()
         
+        # テナント情報を取得
+        tenant = db.query(TTenant).filter(TTenant.id == tenant_id).first()
+        
         return render_template('tenant_store_admins.html', 
                              admins=admins_data, 
                              store=store,
+                             tenant=tenant,
                              current_user_id=current_user_id)
     finally:
         db.close()
