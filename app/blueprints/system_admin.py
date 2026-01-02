@@ -1691,7 +1691,9 @@ def tenant_stores(tid):
                 'address': s.住所,
                 'phone': s.電話番号,
                 'email': s.email,
-                'created_at': s.created_at
+                'active': s.有効,
+                'created_at': s.created_at,
+                'updated_at': s.updated_at
             })
         
         tenant_data = {

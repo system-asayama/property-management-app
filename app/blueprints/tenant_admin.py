@@ -407,7 +407,9 @@ def stores():
                 'id': s.id,
                 '名称': s.名称,
                 'slug': s.slug,
-                'created_at': s.created_at
+                'active': s.有効,
+                'created_at': s.created_at,
+                'updated_at': s.updated_at
             })
         
         return render_template('tenant_stores.html', stores=stores_list)
