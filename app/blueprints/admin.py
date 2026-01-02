@@ -286,9 +286,12 @@ def admins():
     db = SessionLocal()
     
     try:
-        # 現在のユーザーがオーナーかどうかを確認
-        current_admin = db.query(TKanrisha).filter(TKanrisha.id == user_id).first()
-        is_owner = current_admin.is_owner if current_admin else False
+        # 現在のユーザーがオーナーかどうかを中間テーブルから確認
+        current_admin_rel = db.query(TKanrishaTenpo).filter(
+            and_(TKanrishaTenpo.admin_id == user_id, TKanrishaTenpo.store_id == store_id)
+        ).first()
+        is_owner = current_admin_rel.is_owner if current_admin_rel else False
+        can_manage_admins = current_admin_rel.can_manage_admins if current_admin_rel else False
         
         # 店舗に紐づく管理者を取得
         admin_relations = db.query(TKanrishaTenpo).filter(
@@ -305,15 +308,16 @@ def admins():
                     'name': admin.name,
                     'email': admin.email,
                     'active': admin.active,
-                    'is_owner': admin.is_owner if hasattr(admin, 'is_owner') else False,
-                    'can_manage_admins': admin.can_manage_admins if hasattr(admin, 'can_manage_admins') else False,
+                    'is_owner': rel.is_owner,
+                    'can_manage_admins': rel.can_manage_admins,
                     'created_at': admin.created_at.strftime('%Y-%m-%d %H:%M:%S') if admin.created_at else '-'
                 })
         
         return render_template('admin_admins.html', 
                              admins=admins_data, 
                              current_user_id=user_id,
-                             is_owner=is_owner)
+                             is_owner=is_owner,
+                             can_manage_admins=can_manage_admins)
     finally:
         db.close()
 
@@ -861,10 +865,13 @@ def admin_edit(admin_id):
     try:
         # 権限チェック（システム管理者とテナント管理者は無条件で許可）
         role = session.get('role')
+        store_id = session.get('store_id')
         if role not in ['system_admin', 'tenant_admin']:
-            # 店舗管理者の場合はオーナー権限チェック
-            current_admin = db.query(TKanrisha).filter(TKanrisha.id == user_id).first()
-            if not current_admin or (current_admin.is_owner != 1 and current_admin.can_manage_admins != 1):
+            # 店舗管理者の場合は中間テーブルから権限をチェック
+            current_admin_rel = db.query(TKanrishaTenpo).filter(
+                and_(TKanrishaTenpo.admin_id == user_id, TKanrishaTenpo.store_id == store_id)
+            ).first()
+            if not current_admin_rel or (current_admin_rel.is_owner != 1 and current_admin_rel.can_manage_admins != 1):
                 flash('管理者を編集する権限がありません', 'error')
                 return redirect(url_for('admin.dashboard'))
         
@@ -990,10 +997,13 @@ def admin_delete(admin_id):
     try:
         # 権限チェック（システム管理者とテナント管理者は無条件で許可）
         role = session.get('role')
+        store_id = session.get('store_id')
         if role not in ['system_admin', 'tenant_admin']:
-            # 店舗管理者の場合はオーナー権限チェック
-            current_admin = db.query(TKanrisha).filter(TKanrisha.id == user_id).first()
-            if not current_admin or (current_admin.is_owner != 1 and current_admin.can_manage_admins != 1):
+            # 店舗管理者の場合は中間テーブルから権限をチェック
+            current_admin_rel = db.query(TKanrishaTenpo).filter(
+                and_(TKanrishaTenpo.admin_id == user_id, TKanrishaTenpo.store_id == store_id)
+            ).first()
+            if not current_admin_rel or (current_admin_rel.is_owner != 1 and current_admin_rel.can_manage_admins != 1):
                 flash('管理者を削除する権限がありません', 'error')
                 return redirect(url_for('admin.dashboard'))
         
@@ -1039,10 +1049,13 @@ def admin_transfer_owner(admin_id):
     try:
         # 権限チェック（システム管理者とテナント管理者は無条件で許可）
         role = session.get('role')
+        store_id = session.get('store_id')
         if role not in ['system_admin', 'tenant_admin']:
-            # 店舗管理者の場合はオーナー権限チェック
-            current_admin = db.query(TKanrisha).filter(TKanrisha.id == user_id).first()
-            if not current_admin or current_admin.is_owner != 1:
+            # 店舗管理者の場合は中間テーブルから権限をチェック
+            current_admin_rel = db.query(TKanrishaTenpo).filter(
+                and_(TKanrishaTenpo.admin_id == user_id, TKanrishaTenpo.store_id == store_id)
+            ).first()
+            if not current_admin_rel or current_admin_rel.is_owner != 1:
                 flash('オーナー権限を移譲する権限がありません', 'error')
                 return redirect(url_for('admin.admins'))
         
@@ -1063,25 +1076,31 @@ def admin_transfer_owner(admin_id):
         if not target_admin:
             flash('管理者が見つかりません', 'error')
         else:
-            # 現在のオーナーの権限を解除（同じテナント・同じロールの全オーナーを解除）
-            current_owners = db.query(TKanrisha).filter(
+            # 現在の店舗のオーナー権限を解除（中間テーブル）
+            current_owner_rel = db.query(TKanrishaTenpo).filter(
                 and_(
-                    TKanrisha.tenant_id == tenant_id,
-                    TKanrisha.role == ROLES["ADMIN"],
-                    TKanrisha.is_owner == 1
+                    TKanrishaTenpo.store_id == store_id,
+                    TKanrishaTenpo.is_owner == 1
                 )
-            ).all()
+            ).first()
             
-            for owner in current_owners:
-                owner.is_owner = 0
-                owner.can_manage_admins = 0
+            if current_owner_rel:
+                current_owner_rel.is_owner = 0
             
-            # 新しいオーナーに権限を付与
-            target_admin.is_owner = 1
-            target_admin.can_manage_admins = 1
+            # 新しいオーナーに権限を付与（中間テーブル）
+            target_admin_rel = db.query(TKanrishaTenpo).filter(
+                and_(
+                    TKanrishaTenpo.admin_id == admin_id,
+                    TKanrishaTenpo.store_id == store_id
+                )
+            ).first()
             
-            db.commit()
-            flash(f'{target_admin.name} にオーナー権限を移譲しました', 'success')
+            if target_admin_rel:
+                target_admin_rel.is_owner = 1
+                db.commit()
+                flash(f'{target_admin.name} にオーナー権限を移譲しました', 'success')
+            else:
+                flash('管理者がこの店舗に所属していません', 'error')
         
         return redirect(url_for('admin.admins'))
     finally:
