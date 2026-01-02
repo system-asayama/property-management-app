@@ -1966,7 +1966,11 @@ def tenant_apps():
         
         apps = enabled_apps
         
-        return render_template('tenant_admin_tenant_apps.html', tenant=tenant_data, apps=apps)
+        # 店舗情報を取得（現在選択中の店舗）
+        store_id = session.get('store_id')
+        store = db.query(TTenpo).filter(TTenpo.id == store_id).first() if store_id else None
+        
+        return render_template('tenant_admin_tenant_apps.html', tenant=tenant, store=store, apps=apps)
     finally:
         db.close()
 
