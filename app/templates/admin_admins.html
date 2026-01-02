@@ -102,7 +102,7 @@
       <td style="padding:8px;white-space:nowrap"><code>{{ admin.login_id }}</code></td>
       <td style="padding:8px;white-space:nowrap"><strong>{{ admin.name }}</strong></td>
       <td style="padding:8px;white-space:nowrap">{{ admin.email if admin.email else '-' }}</td>
-      <td style="padding:8px">
+      <td style="padding:8px;white-space:normal">
         {% if admin.stores %}
           {% for store in admin.stores %}
             {{ store.name }}
