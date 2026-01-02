@@ -369,12 +369,21 @@ def employee_new():
     db = SessionLocal()
     
     try:
-        # 管理者が管理する店舗一覧を取得
-        stores_list = db.query(TTenpo).join(
-            TKanrishaTenpo, TTenpo.id == TKanrishaTenpo.store_id
-        ).filter(
-            TKanrishaTenpo.admin_id == admin_id
-        ).order_by(TTenpo.id).all()
+        # ユーザーのロールを確認
+        user_role = session.get('role')
+        
+        # システム管理者の場合は、選択した店舗のテナントに属するすべての店舗を取得
+        if user_role == 'system_admin':
+            stores_list = db.query(TTenpo).filter(
+                TTenpo.tenant_id == tenant_id
+            ).order_by(TTenpo.id).all()
+        else:
+            # 管理者が管理する店舗一覧を取得
+            stores_list = db.query(TTenpo).join(
+                TKanrishaTenpo, TTenpo.id == TKanrishaTenpo.store_id
+            ).filter(
+                TKanrishaTenpo.admin_id == admin_id
+            ).order_by(TTenpo.id).all()
         
         if request.method == 'POST':
             login_id = request.form.get('login_id', '').strip()
