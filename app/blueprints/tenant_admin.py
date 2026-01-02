@@ -1567,25 +1567,55 @@ def employee_new():
             # バリデーション
             if not login_id or not name or not email:
                 flash('ログインID、氏名、メールアドレスは必須です', 'error')
-                return render_template('tenant_employee_new.html', stores=stores, from_store_id=from_store_id)
+                # 店舗情報を取得
+                store = None
+                if from_store_id:
+                    store = db.query(TTenpo).filter(TTenpo.id == from_store_id).first()
+                # テナント情報を取得
+                tenant = db.query(TTenant).filter(TTenant.id == tenant_id).first()
+                return render_template('tenant_employee_new.html', stores=stores, from_store_id=from_store_id, store=store, tenant=tenant)
             
             if not store_ids:
                 flash('勤務する店舗を少なくとも1つ選択してください', 'error')
-                return render_template('tenant_employee_new.html', stores=stores, from_store_id=from_store_id)
+                # 店舗情報を取得
+                store = None
+                if from_store_id:
+                    store = db.query(TTenpo).filter(TTenpo.id == from_store_id).first()
+                # テナント情報を取得
+                tenant = db.query(TTenant).filter(TTenant.id == tenant_id).first()
+                return render_template('tenant_employee_new.html', stores=stores, from_store_id=from_store_id, store=store, tenant=tenant)
             
             if password and password != password_confirm:
                 flash('パスワードが一致しません', 'error')
-                return render_template('tenant_employee_new.html', stores=stores, from_store_id=from_store_id)
+                # 店舗情報を取得
+                store = None
+                if from_store_id:
+                    store = db.query(TTenpo).filter(TTenpo.id == from_store_id).first()
+                # テナント情報を取得
+                tenant = db.query(TTenant).filter(TTenant.id == tenant_id).first()
+                return render_template('tenant_employee_new.html', stores=stores, from_store_id=from_store_id, store=store, tenant=tenant)
             
             if password and len(password) < 8:
                 flash('パスワードは8文字以上にしてください', 'error')
-                return render_template('tenant_employee_new.html', stores=stores, from_store_id=from_store_id)
+                # 店舗情報を取得
+                store = None
+                if from_store_id:
+                    store = db.query(TTenpo).filter(TTenpo.id == from_store_id).first()
+                # テナント情報を取得
+                tenant = db.query(TTenant).filter(TTenant.id == tenant_id).first()
+                return render_template('tenant_employee_new.html', stores=stores, from_store_id=from_store_id, store=store, tenant=tenant)
             
             # ログインID重複チェック
             existing = db.query(TJugyoin).filter(TJugyoin.login_id == login_id).first()
             if existing:
                 flash(f'ログインID "{login_id}" は既に使用されています', 'error')
-                return render_template('tenant_employee_new.html', stores=stores, from_store_id=from_store_id)
+                # 店舗情報を取得
+                store = None
+                if from_store_id:
+                    store = db.query(TTenpo).filter(TTenpo.id == from_store_id).first()
+                # テナント情報を取得
+                tenant = db.query(TTenant).filter(TTenant.id == tenant_id).first()
+                return render_template('tenant_employee_new.html', stores=stores, from_store_id=from_store_id, store=store, tenant=tenant)
             
             # 従業員作成
             hashed_password = generate_password_hash(password) if password else None
@@ -1613,7 +1643,19 @@ def employee_new():
             flash(f'従業員 "{name}" を作成しました', 'success')
             return redirect(url_for('tenant_admin.employees'))
         
-        return render_template('tenant_employee_new.html', stores=stores, from_store_id=from_store_id)
+        # 店舗情報を取得
+        store = None
+        if from_store_id:
+            store = db.query(TTenpo).filter(TTenpo.id == from_store_id).first()
+        
+        # テナント情報を取得
+        tenant = db.query(TTenant).filter(TTenant.id == tenant_id).first()
+        
+        return render_template('tenant_employee_new.html', 
+                             stores=stores, 
+                             from_store_id=from_store_id,
+                             store=store,
+                             tenant=tenant)
     finally:
         db.close()
 
