@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}利用可能アプリ一覧{% endblock %}
+{% block content %}
+<h1>利用可能アプリ一覧</h1>
+
+<div class="card">
+  {% if apps and apps|length > 0 %}
+  <h2>利用可能なアプリ</h2>
+  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-top:12px;margin-bottom:30px">
+    {% for app in apps %}
+    <a class="card" href="{{ app.url }}" style="text-decoration:none;border-left:4px solid {{ app.color if app.color else '#4CAF50' }}">
+      <h4>{{ app.display_name }}</h4>
+      <p class="small" style="color:#666">{{ app.description if app.description else 'アプリの説明がありません' }}</p>
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p>利用可能なアプリがありません。</p>
+  {% endif %}
+
+  <div style="margin-top:20px">
+    <a class="btn sub" href="{{ url_for('admin.dashboard') }}">ダッシュボードに戻る</a>
+    <a class="btn sub" href="{{ mypage_url }}">マイページ</a>
+    <a class="btn" href="{{ url_for('auth.logout') }}">ログアウト</a>
+  </div>
+</div>
+{% endblock %}
