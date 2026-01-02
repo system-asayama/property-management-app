@@ -2,6 +2,17 @@ from __future__ import annotations
 import os
 from flask import Flask
 
+# データベーステーブル作成（モジュールレベルで1回だけ実行）
+try:
+    from .db import Base, engine
+    # モデルをインポートしてBaseに登録
+    from . import models_login  # noqa: F401
+    from . import models_auth  # noqa: F401
+    Base.metadata.create_all(bind=engine)
+    print("✅ データベーステーブル作成完了")
+except Exception as e:
+    print(f"⚠️ データベーステーブル作成エラー: {e}")
+
 def create_app() -> Flask:
     """
     Flaskアプリケーションを生成して返します。
@@ -127,16 +138,6 @@ def create_app() -> Flask:
     except Exception as e:
         print(f"⚠️ データベース初期化エラー: {e}")
     
-    # データベーステーブル作成
-    try:
-        from .db import Base, engine
-        # モデルをインポートしてBaseに登録
-        from . import models_login  # noqa: F401
-        from . import models_auth  # noqa: F401
-        Base.metadata.create_all(bind=engine)
-        print("✅ データベーステーブル作成完了")
-    except Exception as e:
-        print(f"⚠️ データベーステーブル作成エラー: {e}")
     
     # データベースマイグレーション実行
     try:
