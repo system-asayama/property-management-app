@@ -1470,6 +1470,8 @@ def employee_new():
     """従業員新規作成"""
     tenant_id = session.get('tenant_id')
     from_store_id = request.args.get('from_store', type=int)  # 作成元の店舗ID
+    if not from_store_id:
+        from_store_id = session.get('store_id')  # セッションから取得
     db = SessionLocal()
     
     try:
