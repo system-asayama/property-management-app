@@ -2,6 +2,15 @@
 {% block title %}テナント一覧{% endblock %}
 {% block content %}
 <style>
+  .tenant-name-link {
+    color: #333;
+    text-decoration: none;
+    font-weight: bold;
+  }
+  .tenant-name-link:hover {
+    text-decoration: underline;
+    color: #007bff;
+  }
   @media (max-width: 768px) {
     .tenant-table {
       display: none;
@@ -92,7 +101,7 @@
     <tr class="tenant-row" data-name="{{ t.名称 }}" data-slug="{{ t.slug }}" 
         style="border-bottom:1px solid #eee">
       <td style="padding:12px">{{ t.id }}</td>
-      <td style="padding:12px"><strong>{{ t.名称 }}</strong></td>
+      <td style="padding:12px"><a href="{{ url_for('system_admin.tenant_detail', tid=t.id) }}" class="tenant-name-link">{{ t.名称 }}</a></td>
       <td style="padding:12px"><code>{{ t.slug }}</code></td>
       <td style="padding:12px">
         {% if t.有効 == 1 %}
@@ -125,7 +134,7 @@
     </div>
     <div class="tenant-card-row">
       <div class="tenant-card-label">名称:</div>
-      <div class="tenant-card-value"><strong>{{ t.名称 }}</strong></div>
+      <div class="tenant-card-value"><a href="{{ url_for('system_admin.tenant_detail', tid=t.id) }}" class="tenant-name-link">{{ t.名称 }}</a></div>
     </div>
     <div class="tenant-card-row">
       <div class="tenant-card-label">Slug:</div>
