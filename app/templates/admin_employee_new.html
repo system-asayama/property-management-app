@@ -59,8 +59,8 @@
     </div>
     
     <div class="actions" style="margin-top:20px; display:flex; gap:10px">
-      <button type="submit">作成</button>
-      <a href="{{ back_url }}" class="button secondary">キャンセル</a>
+      <button class="btn" type="submit" {% if not stores %}disabled{% endif %}>作成</button>
+      <a class="btn sub" href="{{ back_url }}">キャンセル</a>
     </div>
   </div>
 </form>
