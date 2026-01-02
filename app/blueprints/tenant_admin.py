@@ -1177,35 +1177,48 @@ def store_admin_new():
         email = request.form.get('email', '').strip()
         password = request.form.get('password', '')
         password_confirm = request.form.get('password_confirm', '')
-        # 既存の店舗管理者が存在するかチェック
+        store_ids = request.form.getlist('store_ids')
+        
+        # 作成元の店舗IDを必ず含める
+        if str(store_id) not in store_ids:
+            store_ids.append(str(store_id))
+        
+        # 既存の店舗管理者が存在するかチェック（作成元の店舗）
         existing_admin_count = db.query(TKanrishaTenpo).filter(
             TKanrishaTenpo.store_id == store_id
         ).count()
         
         # 最初の管理者の場合は自動的にオーナーにする
         is_first_admin = (existing_admin_count == 0)
-        is_owner = '1' if is_first_admin else '0'
-        can_manage_admins = '1' if is_first_admin else '0'
         
         # バリデーション
         if not login_id or not name or not password:
             flash('ログインID、氏名、パスワードは必須です', 'error')
-            return render_template('tenant_store_admin_new.html')
+            stores_list = db.query(TTenpo).filter(TTenpo.tenant_id == tenant_id).order_by(TTenpo.id).all()
+            return render_template('tenant_store_admin_new.html', stores=stores_list, from_store_id=store_id, back_url=url_for('tenant_admin.store_admins'))
+        
+        if not store_ids:
+            flash('少なくとも1つの店舗を選択してください', 'error')
+            stores_list = db.query(TTenpo).filter(TTenpo.tenant_id == tenant_id).order_by(TTenpo.id).all()
+            return render_template('tenant_store_admin_new.html', stores=stores_list, from_store_id=store_id, back_url=url_for('tenant_admin.store_admins'))
         
         if password != password_confirm:
             flash('パスワードが一致しません', 'error')
-            return render_template('tenant_store_admin_new.html')
+            stores_list = db.query(TTenpo).filter(TTenpo.tenant_id == tenant_id).order_by(TTenpo.id).all()
+            return render_template('tenant_store_admin_new.html', stores=stores_list, from_store_id=store_id, back_url=url_for('tenant_admin.store_admins'))
         
         if len(password) < 8:
             flash('パスワードは8文字以上にしてください', 'error')
-            return render_template('tenant_store_admin_new.html')
+            stores_list = db.query(TTenpo).filter(TTenpo.tenant_id == tenant_id).order_by(TTenpo.id).all()
+            return render_template('tenant_store_admin_new.html', stores=stores_list, from_store_id=store_id, back_url=url_for('tenant_admin.store_admins'))
         
         try:
             # ログインID重複チェック
             existing = db.query(TKanrisha).filter(TKanrisha.login_id == login_id).first()
             if existing:
                 flash(f'ログインID "{login_id}" は既に使用されています', 'error')
-                return render_template('tenant_store_admin_new.html')
+                stores_list = db.query(TTenpo).filter(TTenpo.tenant_id == tenant_id).order_by(TTenpo.id).all()
+                return render_template('tenant_store_admin_new.html', stores=stores_list, from_store_id=store_id, back_url=url_for('tenant_admin.store_admins'))
             
 
             # 管理者作成
@@ -1222,14 +1235,19 @@ def store_admin_new():
             db.add(new_admin)
             db.flush()  # IDを取得するため
             
-            # 中間テーブルに登録
-            admin_store_rel = TKanrishaTenpo(
-                admin_id=new_admin.id,
-                store_id=store_id,
-                is_owner=int(is_owner),
-                can_manage_admins=int(can_manage_admins)
-            )
-            db.add(admin_store_rel)
+            # 選択された店舗との関連を作成
+            for sid in store_ids:
+                sid_int = int(sid)
+                # 作成元の店舗かつ最初の管理者の場合はオーナーにする
+                is_owner_for_this_store = (sid_int == store_id and is_first_admin)
+                can_manage_for_this_store = (sid_int == store_id and is_first_admin)
+                admin_store_rel = TKanrishaTenpo(
+                    admin_id=new_admin.id,
+                    store_id=sid_int,
+                    is_owner=1 if is_owner_for_this_store else 0,
+                    can_manage_admins=1 if can_manage_for_this_store else 0
+                )
+                db.add(admin_store_rel)
             db.commit()
             
             flash(f'店舗管理者 "{name}" を作成しました', 'success')
@@ -1239,13 +1257,14 @@ def store_admin_new():
             flash(f'エラー: {str(e)}', 'error')
         finally:
             db.close()
-        return render_template('tenant_store_admin_new.html')
+            stores_list = db.query(TTenpo).filter(TTenpo.tenant_id == tenant_id).order_by(TTenpo.id).all()
+            return render_template('tenant_store_admin_new.html', stores=stores_list, from_store_id=store_id, back_url=url_for('tenant_admin.store_admins'))
     
     # GETリクエスト
     db = SessionLocal()
     try:
-        store = db.query(TTenpo).filter(TTenpo.id == store_id).first()
-        return render_template('tenant_store_admin_new.html', store=store)
+        stores = db.query(TTenpo).filter(TTenpo.tenant_id == tenant_id).order_by(TTenpo.id).all()
+        return render_template('tenant_store_admin_new.html', stores=stores, from_store_id=store_id, back_url=url_for('tenant_admin.store_admins'))
     finally:
         db.close()
 
