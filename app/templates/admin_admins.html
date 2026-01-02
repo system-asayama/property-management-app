@@ -103,8 +103,11 @@
       <td style="padding:8px;white-space:nowrap"><strong>{{ admin.name }}</strong></td>
       <td style="padding:8px;white-space:nowrap">{{ admin.email if admin.email else '-' }}</td>
       <td style="padding:8px;white-space:nowrap">
-        {% if admin.is_owner == 1 %}
+        {% if admin.owner_store_names %}
           <span style="color:#ff6f00;font-weight:bold">★ オーナー</span>
+          {% for store_name in admin.owner_store_names %}
+            <br><span style="color:#666;font-size:0.9em">（{{ store_name }}）</span>
+          {% endfor %}
         {% else %}
           <span style="color:#999">-</span>
         {% endif %}
@@ -166,8 +169,11 @@
     <div class="admin-card-row">
       <span class="admin-card-label">オーナー:</span>
       <span class="admin-card-value">
-        {% if admin.is_owner == 1 %}
+        {% if admin.owner_store_names %}
           <span style="color:#ff6f00;font-weight:bold">★ オーナー</span>
+          {% for store_name in admin.owner_store_names %}
+            <br><span style="color:#666;font-size:0.9em">（{{ store_name }}）</span>
+          {% endfor %}
         {% else %}
           <span style="color:#999">-</span>
         {% endif %}
