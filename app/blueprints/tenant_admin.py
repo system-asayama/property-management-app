@@ -576,7 +576,8 @@ def store_edit(store_id):
             '電話番号': store_obj.電話番号,
             'email': store_obj.email,
             'openai_api_key': store_obj.openai_api_key,
-            '有効': store_obj.有効
+            '有効': store_obj.有効,
+            'active': store_obj.有効
         }
         
         return render_template('tenant_store_edit.html', store=store)
