@@ -90,6 +90,17 @@
   </div>
   
   <div class="store-info-row">
+    <span class="store-info-label">有効/無効:</span>
+    <span class="store-info-value">
+      {% if store.active == 1 %}
+        <span style="color:#2e7d32">✓ 有効</span>
+      {% else %}
+        <span style="color:#d32f2f">× 無効</span>
+      {% endif %}
+    </span>
+  </div>
+  
+  <div class="store-info-row">
     <span class="store-info-label">郵便番号:</span>
     <span class="store-info-value">{{ store.postal_code if store.postal_code else '' }}</span>
   </div>
