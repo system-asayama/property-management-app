@@ -77,26 +77,36 @@
     
 
     <div style="margin-top:24px;padding:16px;background:#f9f9f9;border-radius:8px">
-      <label style="display:flex;align-items:center;cursor:pointer;margin:0">
+      <label style="display:flex;align-items:center;cursor:{% if tenant_owner_map.get(tenant.id) == 1 %}not-allowed{% else %}pointer{% endif %};margin:0">
         <input name="active" type="checkbox" value="1" 
                {% if admin.active == 1 %}checked{% endif %}
+               {% if tenant_owner_map.get(tenant.id) == 1 %}disabled{% endif %}
                style="width:auto;margin-right:8px">
         <span style="font-weight:normal">有効</span>
       </label>
       <div class="small" style="color:#666;margin-top:4px;margin-left:28px">
+        {% if tenant_owner_map.get(tenant.id) == 1 %}
+        ※ オーナーは常に有効です
+        {% else %}
         チェックを外すとこのテナント管理者は無効化されます。
+        {% endif %}
       </div>
     </div>
 
     <div style="margin-top:16px;padding:16px;background:#f9f9f9;border-radius:8px">
-      <label style="display:flex;align-items:center;cursor:pointer;margin:0">
+      <label style="display:flex;align-items:center;cursor:{% if tenant_owner_map.get(tenant.id) == 1 %}not-allowed{% else %}pointer{% endif %};margin:0">
         <input name="can_manage_admins" type="checkbox" value="1"
                {% if admin.can_manage_admins == 1 %}checked{% endif %}
+               {% if tenant_owner_map.get(tenant.id) == 1 %}disabled{% endif %}
                style="width:auto;margin-right:8px">
         <span style="font-weight:normal">管理者管理権限</span>
       </label>
       <div class="small" style="color:#666;margin-top:4px;margin-left:28px">
+        {% if tenant_owner_map.get(tenant.id) == 1 %}
+        ※ オーナーは常に管理者管理権限を持ちます
+        {% else %}
         チェックを入れるとこのテナント管理者は他のテナント管理者を管理できるようになります。
+        {% endif %}
       </div>
     </div>
     
