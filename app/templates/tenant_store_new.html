@@ -1,7 +1,10 @@
 {% extends "base.html" %}
 {% block title %}店舗新規作成{% endblock %}
 {% block content %}
-<h2>店舗新規作成</h2>
+<div style="margin-bottom:20px">
+  <div style="font-size:1.2em;font-weight:bold;color:#666">{{ tenant.名称 if tenant else 'テナント名' }}</div>
+  <h2 style="margin-top:12px">店舗新規作成</h2>
+</div>
 
 <form method="post">
   {% if session.csrf_token %}
