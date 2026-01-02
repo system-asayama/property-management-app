@@ -83,7 +83,7 @@
     <div style="margin-bottom:16px;padding:16px;background:#f9f9f9;border-radius:8px">
       <label style="display:flex;align-items:center;cursor:pointer;margin:0">
         <input name="can_manage_admins" type="checkbox" value="1"
-               {% if admin.can_manage_admins == 1 %}checked{% endif %}
+               {% if can_manage_admins %}checked{% endif %}
                style="width:auto;margin-right:8px">
         <span style="font-weight:normal">管理者管理権限</span>
       </label>

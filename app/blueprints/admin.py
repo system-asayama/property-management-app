@@ -897,6 +897,7 @@ def admin_edit(admin_id):
             password_confirm = request.form.get('password_confirm', '').strip()
             store_ids = request.form.getlist('store_ids')
             active = int(request.form.get('active', 1))
+            can_manage_admins = 1 if request.form.get('can_manage_admins') == '1' else 0
             
             # 編集対象の管理者を取得
             admin = db.query(TKanrisha).filter(
@@ -947,7 +948,8 @@ def admin_edit(admin_id):
                     for store_id in store_ids:
                         new_relation = TKanrishaTenpo(
                             admin_id=admin_id,
-                            store_id=int(store_id)
+                            store_id=int(store_id),
+                            can_manage_admins=can_manage_admins
                         )
                         db.add(new_relation)
                     
@@ -983,10 +985,14 @@ def admin_edit(admin_id):
         ).all()
         admin_store_ids = [rel.store_id for rel in admin_store_relations]
         
+        # can_manage_adminsを取得（いずれかの店舗で権限があればTrue）
+        can_manage_admins = any(rel.can_manage_admins == 1 for rel in admin_store_relations)
+        
         return render_template('admin_admin_edit.html', 
                              admin=admin_data, 
                              stores=stores_data, 
                              admin_store_ids=admin_store_ids, 
+                             can_manage_admins=can_manage_admins,
                              back_url=url_for('admin.admins'))
     finally:
         db.close()
