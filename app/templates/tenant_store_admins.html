@@ -132,7 +132,6 @@
         <th>ログインID</th>
         <th>氏名</th>
         <th>所属店舗</th>
-        <th>オーナー</th>
         <th>管理権限</th>
         <th>有効</th>
         <th>作成日時</th>
@@ -148,12 +147,17 @@
         <td data-label="ID: ">{{ a.id }}</td>
         <td data-label="ログインID: "><code>{{ a.login_id }}</code></td>
         <td data-label="氏名: "><strong>{{ a.name }}</strong></td>
-        <td data-label="所属店舗: ">{{ a.stores if a.stores else '未設定' }}</td>
-        <td data-label="オーナー: ">
-          {% if a.is_owner == 1 %}
-            <span style="color:#ff6f00;font-weight:bold">★ オーナー</span>
+        <td data-label="所属店舗: ">
+          {% if a.stores %}
+            {% for store in a.stores %}
+              {{ store.name }}
+              {% if store.is_owner %}
+                <span style="color:#ff9800;font-weight:bold;margin-left:4px">★ オーナー</span>
+              {% endif %}
+              {% if not loop.last %}<br>{% endif %}
+            {% endfor %}
           {% else %}
-            <span style="color:#999">-</span>
+            <span style="color:#999">未設定</span>
           {% endif %}
         </td>
         <td data-label="管理権限: ">

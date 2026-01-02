@@ -1162,17 +1162,23 @@ def store_admins():
         current_user_id = session.get('user_id')
         
         for rel, admin in admin_relations:
-            # 管理者が所属する全店舗を取得
-            admin_stores = db.query(TTenpo).join(
+            # 管理者が所属する全店舗を取得（オーナー情報も含む）
+            store_rels = db.query(TTenpo, TKanrishaTenpo).join(
                 TKanrishaTenpo, TTenpo.id == TKanrishaTenpo.store_id
             ).filter(
                 and_(
                     TKanrishaTenpo.admin_id == admin.id,
                     TTenpo.tenant_id == tenant_id
                 )
-            ).all()
+            ).order_by(TTenpo.名称).all()
             
-            store_names = ', '.join([s.名称 for s in admin_stores])
+            # 所屜店舗の名称とオーナー情報を取得
+            stores_with_owner = []
+            for store, store_rel in store_rels:
+                stores_with_owner.append({
+                    'name': store.名称,
+                    'is_owner': store_rel.is_owner == 1
+                })
             
             admins_data.append({
                 'id': admin.id,
@@ -1183,7 +1189,7 @@ def store_admins():
                 'is_owner': rel.is_owner,
                 'can_manage_admins': rel.can_manage_admins,
                 'created_at': admin.created_at,
-                'stores': store_names
+                'stores': stores_with_owner
             })
         
         # 店舗情報を取得
