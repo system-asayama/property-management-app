@@ -13,6 +13,8 @@ try:
     print("✅ データベーステーブル作成完了")
 except Exception as e:
     print(f"⚠️ データベーステーブル作成エラー: {e}")
+    import traceback
+    traceback.print_exc()
 
 def create_app() -> Flask:
     """

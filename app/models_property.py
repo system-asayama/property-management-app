@@ -205,8 +205,8 @@ class TBukkenKeihi(Base):
     """T_物件経費テーブル"""
     __tablename__ = 'T_物件経費'
     
-    物件経費id = Column(Integer, primary_key=True, autoincrement=True)
-    物件id = Column(Integer, ForeignKey('T_物件.物件id'), nullable=False)
+    物件経貿id = Column(Integer, primary_key=True, autoincrement=True)
+    物件id = Column(Integer, ForeignKey('T_物件.id'), nullable=False)
     経費名 = Column(String(100), nullable=False)
     経費カテゴリ = Column(String(50), nullable=False)
     金額 = Column(Numeric(15, 2), nullable=False)
@@ -222,8 +222,8 @@ class THeyaKeihi(Base):
     """T_部屋経費テーブル"""
     __tablename__ = 'T_部屋経費'
     
-    部屋経費id = Column(Integer, primary_key=True, autoincrement=True)
-    部屋id = Column(Integer, ForeignKey('T_部屋.部屋id'), nullable=False)
+    部屋経貿id = Column(Integer, primary_key=True, autoincrement=True)
+    部屋id = Column(Integer, ForeignKey('T_部屋.id'), nullable=False)
     経費名 = Column(String(100), nullable=False)
     経費カテゴリ = Column(String(50), nullable=False)
     金額 = Column(Numeric(15, 2), nullable=False)
