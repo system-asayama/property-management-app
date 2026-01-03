@@ -900,24 +900,97 @@ def depreciation_calculate(property_id):
 
 # ==================== シミュレーション ====================
 
-def calculate_tax_rate(total_income):
-    """所得金額に応じた税率を計算（所得税+住民税）"""
+def calculate_progressive_tax(total_income):
+    """
+    超過累進税率による税金計算（所得税+住民税）
+    
+    Args:
+        total_income: 課税所得（円）
+    
+    Returns:
+        税金額（円）
+    """
     total_income = Decimal(str(total_income))
     
-    if total_income <= 1950000:
-        return Decimal('15.0')  # 5% + 10%
+    # 所得税の計算（超過累進）
+    income_tax = Decimal('0')
+    
+    if total_income <= 0:
+        income_tax = Decimal('0')
+    elif total_income <= 1950000:
+        # 195万円以下: 5%
+        income_tax = total_income * Decimal('0.05')
     elif total_income <= 3300000:
-        return Decimal('20.0')  # 10% + 10%
+        # 195万円超～330万円以下: 195万円まで5%、超過分10%
+        income_tax = Decimal('1950000') * Decimal('0.05') + \
+                     (total_income - Decimal('1950000')) * Decimal('0.10')
     elif total_income <= 6950000:
-        return Decimal('30.0')  # 20% + 10%
+        # 330万円超～695万円以下
+        income_tax = Decimal('1950000') * Decimal('0.05') + \
+                     Decimal('1350000') * Decimal('0.10') + \
+                     (total_income - Decimal('3300000')) * Decimal('0.20')
     elif total_income <= 9000000:
-        return Decimal('33.0')  # 23% + 10%
+        # 695万円超～900万円以下
+        income_tax = Decimal('1950000') * Decimal('0.05') + \
+                     Decimal('1350000') * Decimal('0.10') + \
+                     Decimal('3650000') * Decimal('0.20') + \
+                     (total_income - Decimal('6950000')) * Decimal('0.23')
     elif total_income <= 18000000:
-        return Decimal('43.0')  # 33% + 10%
+        # 900万円超～1,800万円以下
+        income_tax = Decimal('1950000') * Decimal('0.05') + \
+                     Decimal('1350000') * Decimal('0.10') + \
+                     Decimal('3650000') * Decimal('0.20') + \
+                     Decimal('2050000') * Decimal('0.23') + \
+                     (total_income - Decimal('9000000')) * Decimal('0.33')
     elif total_income <= 40000000:
-        return Decimal('50.0')  # 40% + 10%
+        # 1,800万円超～4,000万円以下
+        income_tax = Decimal('1950000') * Decimal('0.05') + \
+                     Decimal('1350000') * Decimal('0.10') + \
+                     Decimal('3650000') * Decimal('0.20') + \
+                     Decimal('2050000') * Decimal('0.23') + \
+                     Decimal('9000000') * Decimal('0.33') + \
+                     (total_income - Decimal('18000000')) * Decimal('0.40')
     else:
-        return Decimal('55.0')  # 45% + 10%
+        # 4,000万円超
+        income_tax = Decimal('1950000') * Decimal('0.05') + \
+                     Decimal('1350000') * Decimal('0.10') + \
+                     Decimal('3650000') * Decimal('0.20') + \
+                     Decimal('2050000') * Decimal('0.23') + \
+                     Decimal('9000000') * Decimal('0.33') + \
+                     Decimal('22000000') * Decimal('0.40') + \
+                     (total_income - Decimal('40000000')) * Decimal('0.45')
+    
+    # 住民税の計算（一律10%）
+    if total_income > 0:
+        resident_tax = total_income * Decimal('0.10')
+    else:
+        resident_tax = Decimal('0')
+    
+    # 合計税金
+    total_tax = income_tax + resident_tax
+    
+    return total_tax
+
+
+def calculate_tax_rate(total_income):
+    """
+    表示用の実効税率を計算（互換性のため残す）
+    
+    Args:
+        total_income: 課税所得（円）
+    
+    Returns:
+        実効税率（%）
+    """
+    total_income = Decimal(str(total_income))
+    
+    if total_income <= 0:
+        return Decimal('0')
+    
+    total_tax = calculate_progressive_tax(total_income)
+    effective_rate = (total_tax / total_income) * Decimal('100')
+    
+    return effective_rate
 
 
 def calculate_simulation(simulation, db):
@@ -1022,15 +1095,18 @@ def calculate_simulation(simulation, db):
         # 不動産所得
         不動産所得 = 総収入 - 総経費
         
-        # 税金計算
+        # 税金計算（超過累進税率）
         if simulation.税率:
-            税率 = simulation.税率
+            # 手動設定された税率を使用
+            税金 = (不動産所得 + simulation.その他所得) * (simulation.税率 / 100)
+            if 税金 < 0:
+                税金 = Decimal('0')
         else:
-            税率 = calculate_tax_rate(不動産所得 + simulation.その他所得)
-        
-        税金 = (不動産所得 + simulation.その他所得) * (税率 / 100)
-        if 税金 < 0:
-            税金 = Decimal('0')
+            # 超過累進税率で税金を計算
+            課税所得 = 不動産所得 + simulation.その他所得
+            税金 = calculate_progressive_tax(課税所得)
+            if 税金 < 0:
+                税金 = Decimal('0')
         
         # キャッシュフロー
         ローン元本返済 = simulation.ローン年間返済額 - 借入金利息
