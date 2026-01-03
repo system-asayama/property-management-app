@@ -1894,10 +1894,18 @@ def employee_new():
 # アプリ管理
 # ========================================
 
-# 利用可能なアプリ一覧（現在は空）
-# 将来的にアプリを追加する場合は、以下の形式で追加してください：
-# {'name': 'app-name', 'display_name': 'アプリ表示名', 'scope': 'store'/'tenant'}
-AVAILABLE_APPS = []
+# 利用可能なアプリ一覧
+AVAILABLE_APPS = [
+    {
+        'name': 'property',
+        'display_name': '不動産管理',
+        'description': '不動産物件、契約、入居者、家賃収支、減価償却を管理します。',
+        'scope': 'tenant',
+        'url': 'property.index',
+        'icon': 'fas fa-building',
+        'color': 'bg-primary'
+    }
+]
 
 
 @bp.route('/app_management', methods=['GET', 'POST'])

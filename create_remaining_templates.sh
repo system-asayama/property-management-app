@@ -1,0 +1,294 @@
+#!/bin/bash
+
+# 物件詳細テンプレート
+cat > app/templates/property_property_detail.html << 'TEMPLATE'
+{% extends "base.html" %}
+{% block title %}物件詳細 - 不動産管理{% endblock %}
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2><i class="fas fa-building"></i> 物件詳細</h2>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('property.index') }}">不動産管理</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('property.properties') }}">物件一覧</a></li>
+                    <li class="breadcrumb-item active">{{ property.物件名 }}</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">{{ property.物件名 }}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>物件種別:</strong> {{ property.物件種別 or '-' }}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>構造:</strong> {{ property.構造 or '-' }}
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <strong>住所:</strong> 〒{{ property.郵便番号 or '-' }} {{ property.住所 or '-' }}
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <strong>建築年月:</strong> {{ property.建築年月.strftime('%Y年%m月') if property.建築年月 else '-' }}
+                        </div>
+                        <div class="col-md-4">
+                            <strong>階数:</strong> {{ property.階数 or '-' }}階
+                        </div>
+                        <div class="col-md-4">
+                            <strong>部屋数:</strong> {{ property.部屋数 or '-' }}部屋
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>延床面積:</strong> {{ property.延床面積 or '-' }}㎡
+                        </div>
+                        <div class="col-md-6">
+                            <strong>取得価額:</strong> {% if property.取得価額 %}¥{{ "{:,.0f}".format(property.取得価額) }}{% else %}-{% endif %}
+                        </div>
+                    </div>
+                    {% if property.備考 %}
+                    <div class="row">
+                        <div class="col-12">
+                            <strong>備考:</strong><br>{{ property.備考 }}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="card-footer">
+                    <a href="{{ url_for('property.property_edit', id=property.id) }}" class="btn btn-warning">
+                        <i class="fas fa-edit"></i> 編集
+                    </a>
+                    <a href="{{ url_for('property.room_new', property_id=property.id) }}" class="btn btn-success">
+                        <i class="fas fa-plus"></i> 部屋を追加
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0">減価償却情報</h6>
+                </div>
+                <div class="card-body">
+                    <p><strong>取得年月日:</strong> {{ property.取得年月日.strftime('%Y年%m月%d日') if property.取得年月日 else '-' }}</p>
+                    <p><strong>耐用年数:</strong> {{ property.耐用年数 or '-' }}年</p>
+                    <p><strong>償却方法:</strong> {{ property.償却方法 or '-' }}</p>
+                    <p><strong>残存価額:</strong> {% if property.残存価額 %}¥{{ "{:,.0f}".format(property.残存価額) }}{% else %}-{% endif %}</p>
+                    <a href="{{ url_for('property.depreciation_detail', property_id=property.id) }}" class="btn btn-sm btn-info">
+                        減価償却詳細
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mt-4">
+        <div class="col-12">
+            <h4>部屋一覧</h4>
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>部屋番号</th>
+                            <th>間取り</th>
+                            <th>専有面積</th>
+                            <th>賃料</th>
+                            <th>入居状況</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for room in rooms %}
+                        <tr>
+                            <td>{{ room.部屋番号 }}</td>
+                            <td>{{ room.間取り or '-' }}</td>
+                            <td>{{ room.専有面積 or '-' }}㎡</td>
+                            <td>¥{{ "{:,.0f}".format(room.賃料) if room.賃料 else '-' }}</td>
+                            <td>
+                                {% if room.入居状況 == '空室' %}
+                                <span class="badge bg-warning">{{ room.入居状況 }}</span>
+                                {% elif room.入居状況 == '入居中' %}
+                                <span class="badge bg-success">{{ room.入居状況 }}</span>
+                                {% else %}
+                                <span class="badge bg-secondary">{{ room.入居状況 }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{{ url_for('property.room_detail', id=room.id) }}" class="btn btn-sm btn-info">詳細</a>
+                                <a href="{{ url_for('property.room_edit', id=room.id) }}" class="btn btn-sm btn-warning">編集</a>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center">部屋が登録されていません</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+TEMPLATE
+
+echo "物件詳細テンプレート作成完了"
+
+# 物件編集テンプレート（物件登録と同様の構造）
+cat > app/templates/property_property_edit.html << 'TEMPLATE'
+{% extends "base.html" %}
+{% block title %}物件編集 - 不動産管理{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2><i class="fas fa-building"></i> 物件編集</h2>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('property.index') }}">不動産管理</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('property.properties') }}">物件一覧</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('property.property_detail', id=property.id) }}">{{ property.物件名 }}</a></li>
+                    <li class="breadcrumb-item active">編集</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-10 mx-auto">
+            <div class="card">
+                <div class="card-body">
+                    <form method="POST">
+                        <h5 class="mb-3">基本情報</h5>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="物件名" class="form-label">物件名 <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="物件名" name="物件名" value="{{ property.物件名 }}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="物件種別" class="form-label">物件種別</label>
+                                <select class="form-select" id="物件種別" name="物件種別">
+                                    <option value="">選択してください</option>
+                                    <option value="マンション" {% if property.物件種別 == 'マンション' %}selected{% endif %}>マンション</option>
+                                    <option value="アパート" {% if property.物件種別 == 'アパート' %}selected{% endif %}>アパート</option>
+                                    <option value="戸建て" {% if property.物件種別 == '戸建て' %}selected{% endif %}>戸建て</option>
+                                    <option value="店舗" {% if property.物件種別 == '店舗' %}selected{% endif %}>店舗</option>
+                                    <option value="事務所" {% if property.物件種別 == '事務所' %}selected{% endif %}>事務所</option>
+                                    <option value="その他" {% if property.物件種別 == 'その他' %}selected{% endif %}>その他</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label for="郵便番号" class="form-label">郵便番号</label>
+                                <input type="text" class="form-control" id="郵便番号" name="郵便番号" value="{{ property.郵便番号 or '' }}">
+                            </div>
+                            <div class="col-md-8">
+                                <label for="住所" class="form-label">住所</label>
+                                <input type="text" class="form-control" id="住所" name="住所" value="{{ property.住所 or '' }}">
+                            </div>
+                        </div>
+                        
+                        <h5 class="mb-3 mt-4">建物情報</h5>
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label for="建築年月" class="form-label">建築年月</label>
+                                <input type="date" class="form-control" id="建築年月" name="建築年月" value="{{ property.建築年月.strftime('%Y-%m-%d') if property.建築年月 else '' }}">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="構造" class="form-label">構造</label>
+                                <select class="form-select" id="構造" name="構造">
+                                    <option value="">選択してください</option>
+                                    <option value="木造" {% if property.構造 == '木造' %}selected{% endif %}>木造</option>
+                                    <option value="鉄骨造" {% if property.構造 == '鉄骨造' %}selected{% endif %}>鉄骨造</option>
+                                    <option value="RC造" {% if property.構造 == 'RC造' %}selected{% endif %}>RC造</option>
+                                    <option value="SRC造" {% if property.構造 == 'SRC造' %}selected{% endif %}>SRC造</option>
+                                    <option value="その他" {% if property.構造 == 'その他' %}selected{% endif %}>その他</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="階数" class="form-label">階数</label>
+                                <input type="number" class="form-control" id="階数" name="階数" value="{{ property.階数 or '' }}" min="1">
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="延床面積" class="form-label">延床面積（㎡）</label>
+                                <input type="number" class="form-control" id="延床面積" name="延床面積" value="{{ property.延床面積 or '' }}" step="0.01" min="0">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="部屋数" class="form-label">部屋数</label>
+                                <input type="number" class="form-control" id="部屋数" name="部屋数" value="{{ property.部屋数 or '' }}" min="1">
+                            </div>
+                        </div>
+                        
+                        <h5 class="mb-3 mt-4">減価償却情報</h5>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="取得価額" class="form-label">取得価額（円）</label>
+                                <input type="number" class="form-control" id="取得価額" name="取得価額" value="{{ property.取得価額 or '' }}" min="0">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="取得年月日" class="form-label">取得年月日</label>
+                                <input type="date" class="form-control" id="取得年月日" name="取得年月日" value="{{ property.取得年月日.strftime('%Y-%m-%d') if property.取得年月日 else '' }}">
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label for="耐用年数" class="form-label">耐用年数（年）</label>
+                                <input type="number" class="form-control" id="耐用年数" name="耐用年数" value="{{ property.耐用年数 or '' }}" min="1">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="償却方法" class="form-label">償却方法</label>
+                                <select class="form-select" id="償却方法" name="償却方法">
+                                    <option value="">選択してください</option>
+                                    <option value="定額法" {% if property.償却方法 == '定額法' %}selected{% endif %}>定額法</option>
+                                    <option value="定率法" {% if property.償却方法 == '定率法' %}selected{% endif %}>定率法</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="残存価額" class="form-label">残存価額（円）</label>
+                                <input type="number" class="form-control" id="残存価額" name="残存価額" value="{{ property.残存価額 or 0 }}" min="0">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="備考" class="form-label">備考</label>
+                            <textarea class="form-control" id="備考" name="備考" rows="3">{{ property.備考 or '' }}</textarea>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{{ url_for('property.property_detail', id=property.id) }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> キャンセル
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> 更新
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+TEMPLATE
+
+echo "物件編集テンプレート作成完了"
+

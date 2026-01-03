@@ -8,6 +8,7 @@ try:
     # モデルをインポートしてBaseに登録
     from . import models_login  # noqa: F401
     from . import models_auth  # noqa: F401
+    from . import models_property  # noqa: F401
     Base.metadata.create_all(bind=engine)
     print("✅ データベーステーブル作成完了")
 except Exception as e:
@@ -190,6 +191,12 @@ def create_app() -> Flask:
         app.register_blueprint(migrate_bp)
     except Exception as e:
         print(f"⚠️ migrate blueprint 登録エラー: {e}")
+
+    try:
+        from .blueprints.property import property_bp
+        app.register_blueprint(property_bp)
+    except Exception as e:
+        print(f"⚠️ property blueprint 登録エラー: {e}")
 
     # エラーハンドラ
     @app.errorhandler(404)
