@@ -15,7 +15,7 @@ bp = Blueprint('admin', __name__, url_prefix='/admin')
 
 # 利用可能なアプリの定義
 AVAILABLE_APPS = [
-    {'name': 'survey-app', 'display_name': 'アンケートアプリ', 'scope': 'store'}
+    # 現在利用可能なアプリはありません
 ]
 
 
