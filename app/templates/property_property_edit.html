@@ -9,12 +9,12 @@
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="{{ url_for('property.property_list') }}">物件一覧</a></li>
-            <li class="breadcrumb-item"><a href="{{ url_for('property.property_detail', property_id=property.id) }}">{{ property.物件名 }}</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('property.property_detail', id=property.id) }}">{{ property.物件名 }}</a></li>
             <li class="breadcrumb-item active" aria-current="page">編集</li>
         </ol>
     </nav>
     
-    <form method="POST" action="{{ url_for('property.property_edit', property_id=property.id) }}">
+    <form method="POST" action="{{ url_for('property.property_edit', id=property.id) }}">
         <!-- タブナビゲーション -->
         <ul class="nav nav-tabs" id="propertyTabs" role="tablist">
             <li class="nav-item" role="presentation">
