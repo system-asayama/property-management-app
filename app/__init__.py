@@ -148,39 +148,39 @@ def create_app() -> Flask:
     except Exception as e:
         print(f"⚠️ データベースマイグレーションエラー: {e}")
     
-    # 自動マイグレーション実行（不足カラムの自動追加）
-    try:
-        from .utils.auto_migrate import auto_migrate_all
-        from .db import engine
-        from . import models_login, models_property
-        
-        # マイグレーション対象のモデルとテーブル名のリスト
-        migration_targets = [
-            # models_login
-            (models_login.TKanrisha, 'T_管理者'),
-            (models_login.TJugyoin, 'T_従業員'),
-            (models_login.TTenant, 'T_テナント'),
-            (models_login.TTenpo, 'T_店舗'),
-            (models_login.TKanrishaTenpo, 'T_管理者_店舗'),
-            (models_login.TJugyoinTenpo, 'T_従業員_店舗'),
-            # models_property
-            (models_property.TProperty, 'T_物件'),
-            (models_property.TRoom, 'T_部屋'),
-            (models_property.TTenant_Property, 'T_入居者'),
-            (models_property.TContract, 'T_契約'),
-            (models_property.TRentIncome, 'T_家賃収支'),
-            (models_property.TDepreciation, 'T_減価償却'),
-            (models_property.TSimulation, 'T_シミュレーション'),
-            (models_property.TSimulationResult, 'T_シミュレーション結果'),
-        ]
-        
-        auto_migrate_all(engine, migration_targets)
-        print("✅ 自動マイグレーション完了")
-    except Exception as e:
-        print(f"⚠️ 自動マイグレーションエラー: {e}")
-
-    # blueprints 登録
-    try:
+    #     # 自動マイグレーション実行（不足カラムの自動追加）
+    #     try:
+    #         from .utils.auto_migrate import auto_migrate_all
+    #         from .db import engine
+    #         from . import models_login, models_property
+    #         
+    #         # マイグレーション対象のモデルとテーブル名のリスト
+    #         migration_targets = [
+    #             # models_login
+    #             (models_login.TKanrisha, 'T_管理者'),
+    #             (models_login.TJugyoin, 'T_従業員'),
+    #             (models_login.TTenant, 'T_テナント'),
+    #             (models_login.TTenpo, 'T_店舗'),
+    #             (models_login.TKanrishaTenpo, 'T_管理者_店舗'),
+    #             (models_login.TJugyoinTenpo, 'T_従業員_店舗'),
+    #             # models_property
+    #             (models_property.TProperty, 'T_物件'),
+    #             (models_property.TRoom, 'T_部屋'),
+    #             (models_property.TTenant_Property, 'T_入居者'),
+    #             (models_property.TContract, 'T_契約'),
+    #             (models_property.TRentIncome, 'T_家賃収支'),
+    #             (models_property.TDepreciation, 'T_減価償却'),
+    #             (models_property.TSimulation, 'T_シミュレーション'),
+    #             (models_property.TSimulationResult, 'T_シミュレーション結果'),
+    #         ]
+    #         
+    #         auto_migrate_all(engine, migration_targets)
+    #         print("✅ 自動マイグレーション完了")
+    #     except Exception as e:
+    #         print(f"⚠️ 自動マイグレーションエラー: {e}")
+    # 
+    #     # blueprints 登録
+    #     try:
         from .blueprints.health import bp as health_bp  # type: ignore
         app.register_blueprint(health_bp)
     except Exception:
