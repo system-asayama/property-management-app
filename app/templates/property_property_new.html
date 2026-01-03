@@ -183,8 +183,11 @@ function calculateUsefulLifeForProperty() {
         return;
     }
     
-    // 経過年数を計算（年単位、1年未満切り捨て）
-    const elapsedYears = Math.floor((acquisition - construction) / (365.25 * 24 * 60 * 60 * 1000));
+    // 経過月数を計算
+    const elapsedMonths = (acquisition.getFullYear() - construction.getFullYear()) * 12 + (acquisition.getMonth() - construction.getMonth());
+    
+    // 経過年数を計算（月単位で計算し、1年未満切り捨て）
+    const elapsedYears = Math.floor(elapsedMonths / 12);
     
     let usefulLife;
     
@@ -194,13 +197,18 @@ function calculateUsefulLifeForProperty() {
         usefulLife = legalLife;
     } else {
         // 中古の場合（簡便法）
+        // 月単位で計算し、1年未満切り捨て
+        let usefulLifeMonths;
         if (elapsedYears >= legalLife) {
             // 法定耐用年数の全部を経過している場合
-            usefulLife = Math.floor(legalLife * 0.2);
+            usefulLifeMonths = Math.floor(legalLife * 12 * 0.2);
         } else {
             // 法定耐用年数の一部を経過している場合
-            usefulLife = Math.floor((legalLife - elapsedYears) + elapsedYears * 0.2);
+            usefulLifeMonths = Math.floor((legalLife * 12 - elapsedMonths) + elapsedMonths * 0.2);
         }
+        
+        // 月単位を年単位に変換（1年未満切り捨て）
+        usefulLife = Math.floor(usefulLifeMonths / 12);
         
         // 最低2年
         usefulLife = Math.max(usefulLife, 2);

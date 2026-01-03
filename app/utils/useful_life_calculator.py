@@ -52,8 +52,11 @@ def calculate_useful_life(
     if legal_life is None:
         raise ValueError(f"不明な構造: {structure}")
     
-    # 経過年数を計算（年単位、1年未満切り捨て）
-    elapsed_years = (acquisition_date - construction_date).days // 365
+    # 経過月数を計算
+    elapsed_months = (acquisition_date.year - construction_date.year) * 12 + (acquisition_date.month - construction_date.month)
+    
+    # 経過年数を計算（月単位で計算し、1年未満切り捨て）
+    elapsed_years = elapsed_months // 12
     
     # 新築 or 中古を判定
     # 簡易判定: 建築後1年未満の場合は新築とみなす
@@ -61,12 +64,16 @@ def calculate_useful_life(
         return legal_life, '新築'
     
     # 中古資産の耐用年数算定（簡便法）
+    # 月単位で計算し、1年未満切り捨て
     if elapsed_years >= legal_life:
         # 法定耐用年数の全部を経過している場合
-        useful_life = int(legal_life * 0.2)
+        useful_life_months = int(legal_life * 12 * 0.2)
     else:
         # 法定耐用年数の一部を経過している場合
-        useful_life = int((legal_life - elapsed_years) + elapsed_years * 0.2)
+        useful_life_months = int((legal_life * 12 - elapsed_months) + elapsed_months * 0.2)
+    
+    # 月単位を年単位に変換（1年未満切り捨て）
+    useful_life = useful_life_months // 12
     
     # 最低2年
     useful_life = max(useful_life, 2)
