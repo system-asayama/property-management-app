@@ -7,7 +7,7 @@ from sqlalchemy import select, update, delete
 from datetime import datetime, date
 from decimal import Decimal
 from app.db import SessionLocal
-from app.models_property import TBukken, THeya, TNyukyosha, TKeiyaku, TYachinShushi, TGenkashokaku
+from app.models_property import TBukken, THeya, TNyukyosha, TKeiyaku, TYachinShushi, TGenkashokaku, TSimulation, TSimulationResult
 
 property_bp = Blueprint('property', __name__, url_prefix='/property')
 
@@ -877,3 +877,361 @@ def depreciation_calculate(property_id):
     
     flash(f'{target_year}年度の減価償却を計算しました', 'success')
     return redirect(url_for('property.depreciation_detail', property_id=property_id))
+
+
+# ==================== シミュレーション ====================
+
+def calculate_tax_rate(total_income):
+    """所得金額に応じた税率を計算（所得税+住民税）"""
+    total_income = Decimal(str(total_income))
+    
+    if total_income <= 1950000:
+        return Decimal('15.0')  # 5% + 10%
+    elif total_income <= 3300000:
+        return Decimal('20.0')  # 10% + 10%
+    elif total_income <= 6950000:
+        return Decimal('30.0')  # 20% + 10%
+    elif total_income <= 9000000:
+        return Decimal('33.0')  # 23% + 10%
+    elif total_income <= 18000000:
+        return Decimal('43.0')  # 33% + 10%
+    elif total_income <= 40000000:
+        return Decimal('50.0')  # 40% + 10%
+    else:
+        return Decimal('55.0')  # 45% + 10%
+
+
+def calculate_simulation(simulation, db):
+    """シミュレーション計算を実行"""
+    tenant_id = session.get('tenant_id')
+    
+    # 既存の結果を削除
+    db.execute(
+        delete(TSimulationResult).where(TSimulationResult.シミュレーションid == simulation.id)
+    )
+    db.commit()
+    
+    # 物件データを取得
+    if simulation.物件id:
+        property_data = db.execute(
+            select(TBukken).where(TBukken.id == simulation.物件id, TBukken.tenant_id == tenant_id)
+        ).scalar_one_or_none()
+        
+        if not property_data:
+            return False
+        
+        # 物件の部屋を取得
+        rooms = db.execute(
+            select(THeya).where(THeya.property_id == property_data.id, THeya.有効 == 1)
+        ).scalars().all()
+        
+        # 年間家賃収入を計算
+        total_rent = sum(room.賃料 or 0 for room in rooms) * 12
+    else:
+        # 全物件の場合
+        properties = db.execute(
+            select(TBukken).where(TBukken.tenant_id == tenant_id, TBukken.有効 == 1)
+        ).scalars().all()
+        
+        total_rent = Decimal('0')
+        for prop in properties:
+            rooms = db.execute(
+                select(THeya).where(THeya.property_id == prop.id, THeya.有効 == 1)
+            ).scalars().all()
+            total_rent += sum(room.賃料 or 0 for room in rooms) * 12
+    
+    # 年度ごとにシミュレーション
+    current_loan_balance = simulation.ローン残高
+    
+    for year_offset in range(simulation.期間):
+        year = simulation.開始年度 + year_offset
+        
+        # 収入計算
+        家賃収入 = total_rent * (simulation.稼働率 / 100)
+        その他収入 = simulation.その他収入
+        総収入 = 家賃収入 + その他収入
+        
+        # 経費計算
+        管理費 = 家賃収入 * (simulation.管理費率 / 100)
+        修繕費 = 家賃収入 * (simulation.修繕費率 / 100)
+        固定資産税 = simulation.固定資産税
+        損害保険料 = simulation.損害保険料
+        借入金利息 = current_loan_balance * (simulation.ローン金利 / 100)
+        その他経費 = simulation.その他経費
+        
+        # 減価償却費を計算
+        if simulation.物件id and property_data:
+            if property_data.償却方法 == '定額法':
+                減価償却費 = (property_data.取得価額 - (property_data.残存価額 or 0)) / property_data.耐用年数
+            elif property_data.償却方法 == '定率法':
+                償却率 = Decimal('2.0') / property_data.耐用年数
+                # 簡易計算（実際は期首帳簿価額を追跡する必要がある）
+                減価償却費 = property_data.取得価額 * 償却率 * (Decimal('0.9') ** year_offset)
+            else:
+                減価償却費 = Decimal('0')
+        else:
+            # 全物件の場合は簡易計算
+            減価償却費 = Decimal('0')
+            if simulation.物件id is None:
+                for prop in properties:
+                    if prop.償却方法 == '定額法' and prop.耐用年数:
+                        減価償却費 += (prop.取得価額 - (prop.残存価額 or 0)) / prop.耐用年数
+        
+        総経費 = 管理費 + 修繕費 + 固定資産税 + 損害保険料 + 借入金利息 + 減価償却費 + その他経費
+        
+        # 不動産所得
+        不動産所得 = 総収入 - 総経費
+        
+        # 税金計算
+        if simulation.税率:
+            税率 = simulation.税率
+        else:
+            税率 = calculate_tax_rate(不動産所得 + simulation.その他所得)
+        
+        税金 = (不動産所得 + simulation.その他所得) * (税率 / 100)
+        if 税金 < 0:
+            税金 = Decimal('0')
+        
+        # キャッシュフロー
+        ローン元本返済 = simulation.ローン年間返済額 - 借入金利息
+        キャッシュフロー = 総収入 - (総経費 - 減価償却費) - 税金 - ローン元本返済
+        
+        # ローン残高を更新
+        current_loan_balance -= ローン元本返済
+        if current_loan_balance < 0:
+            current_loan_balance = Decimal('0')
+        
+        # 結果を保存
+        result = TSimulationResult(
+            シミュレーションid=simulation.id,
+            年度=year,
+            家賃収入=家賃収入,
+            その他収入=その他収入,
+            総収入=総収入,
+            管理費=管理費,
+            修繕費=修繕費,
+            固定資産税=固定資産税,
+            損害保険料=損害保険料,
+            借入金利息=借入金利息,
+            減価償却費=減価償却費,
+            その他経費=その他経費,
+            総経費=総経費,
+            不動産所得=不動産所得,
+            税金=税金,
+            キャッシュフロー=キャッシュフロー,
+            ローン残高=current_loan_balance
+        )
+        
+        db.add(result)
+    
+    db.commit()
+    return True
+
+
+@property_bp.route('/simulations')
+@require_tenant_admin
+def simulations():
+    """シミュレーション一覧"""
+    db = SessionLocal()
+    tenant_id = session.get('tenant_id')
+    
+    simulations = db.execute(
+        select(TSimulation).where(TSimulation.tenant_id == tenant_id)
+        .order_by(TSimulation.created_at.desc())
+    ).scalars().all()
+    
+    # 各シミュレーションの物件名を取得
+    simulation_list = []
+    for sim in simulations:
+        if sim.物件id:
+            property_data = db.execute(
+                select(TBukken).where(TBukken.id == sim.物件id)
+            ).scalar_one_or_none()
+            property_name = property_data.物件名 if property_data else '不明'
+        else:
+            property_name = '全物件'
+        
+        simulation_list.append({
+            'simulation': sim,
+            'property_name': property_name
+        })
+    
+    db.close()
+    return render_template('property_simulations.html', simulations=simulation_list)
+
+
+@property_bp.route('/simulations/new', methods=['GET', 'POST'])
+@require_tenant_admin
+def simulation_new():
+    """シミュレーション新規作成"""
+    db = SessionLocal()
+    tenant_id = session.get('tenant_id')
+    
+    if request.method == 'POST':
+        # フォームデータを取得
+        名称 = request.form.get('名称')
+        物件id = request.form.get('物件id')
+        開始年度 = int(request.form.get('開始年度', date.today().year))
+        期間 = int(request.form.get('期間', 10))
+        稼働率 = Decimal(request.form.get('稼働率', '95.00'))
+        管理費率 = Decimal(request.form.get('管理費率', '5.00'))
+        修繕費率 = Decimal(request.form.get('修繕費率', '5.00'))
+        固定資産税 = Decimal(request.form.get('固定資産税', '0'))
+        損害保険料 = Decimal(request.form.get('損害保険料', '0'))
+        ローン残高 = Decimal(request.form.get('ローン残高', '0'))
+        ローン金利 = Decimal(request.form.get('ローン金利', '0'))
+        ローン年間返済額 = Decimal(request.form.get('ローン年間返済額', '0'))
+        その他収入 = Decimal(request.form.get('その他収入', '0'))
+        その他経費 = Decimal(request.form.get('その他経費', '0'))
+        その他所得 = Decimal(request.form.get('その他所得', '0'))
+        
+        # 物件IDの処理
+        if 物件id == '' or 物件id == 'all':
+            物件id = None
+        else:
+            物件id = int(物件id)
+        
+        # シミュレーションを作成
+        simulation = TSimulation(
+            tenant_id=tenant_id,
+            名称=名称,
+            物件id=物件id,
+            開始年度=開始年度,
+            期間=期間,
+            稼働率=稼働率,
+            管理費率=管理費率,
+            修繕費率=修繕費率,
+            固定資産税=固定資産税,
+            損害保険料=損害保険料,
+            ローン残高=ローン残高,
+            ローン金利=ローン金利,
+            ローン年間返済額=ローン年間返済額,
+            その他収入=その他収入,
+            その他経費=その他経費,
+            その他所得=その他所得
+        )
+        
+        db.add(simulation)
+        db.commit()
+        
+        # シミュレーション計算を実行
+        if calculate_simulation(simulation, db):
+            flash('シミュレーションを作成しました', 'success')
+            return redirect(url_for('property.simulation_detail', simulation_id=simulation.id))
+        else:
+            flash('シミュレーションの計算に失敗しました', 'danger')
+            return redirect(url_for('property.simulations'))
+    
+    # GET: フォーム表示
+    properties = db.execute(
+        select(TBukken).where(TBukken.tenant_id == tenant_id, TBukken.有効 == 1)
+    ).scalars().all()
+    
+    db.close()
+    return render_template('property_simulation_new.html', 
+                         properties=properties,
+                         current_year=date.today().year)
+
+
+@property_bp.route('/simulations/<int:simulation_id>')
+@require_tenant_admin
+def simulation_detail(simulation_id):
+    """シミュレーション詳細"""
+    db = SessionLocal()
+    tenant_id = session.get('tenant_id')
+    
+    simulation = db.execute(
+        select(TSimulation).where(TSimulation.id == simulation_id, TSimulation.tenant_id == tenant_id)
+    ).scalar_one_or_none()
+    
+    if not simulation:
+        flash('シミュレーションが見つかりません', 'danger')
+        return redirect(url_for('property.simulations'))
+    
+    # 物件名を取得
+    if simulation.物件id:
+        property_data = db.execute(
+            select(TBukken).where(TBukken.id == simulation.物件id)
+        ).scalar_one_or_none()
+        property_name = property_data.物件名 if property_data else '不明'
+    else:
+        property_name = '全物件'
+    
+    # 結果を取得
+    results = db.execute(
+        select(TSimulationResult).where(TSimulationResult.シミュレーションid == simulation_id)
+        .order_by(TSimulationResult.年度)
+    ).scalars().all()
+    
+    # 累積キャッシュフローを計算
+    累積CF = Decimal('0')
+    results_with_cumulative = []
+    for result in results:
+        累積CF += result.キャッシュフロー
+        results_with_cumulative.append({
+            'result': result,
+            '累積キャッシュフロー': 累積CF
+        })
+    
+    db.close()
+    return render_template('property_simulation_detail.html',
+                         simulation=simulation,
+                         property_name=property_name,
+                         results=results_with_cumulative)
+
+
+@property_bp.route('/simulations/<int:simulation_id>/delete', methods=['POST'])
+@require_tenant_admin
+def simulation_delete(simulation_id):
+    """シミュレーション削除"""
+    db = SessionLocal()
+    tenant_id = session.get('tenant_id')
+    
+    simulation = db.execute(
+        select(TSimulation).where(TSimulation.id == simulation_id, TSimulation.tenant_id == tenant_id)
+    ).scalar_one_or_none()
+    
+    if not simulation:
+        flash('シミュレーションが見つかりません', 'danger')
+        return redirect(url_for('property.simulations'))
+    
+    # 結果も削除
+    db.execute(
+        delete(TSimulationResult).where(TSimulationResult.シミュレーションid == simulation_id)
+    )
+    
+    # シミュレーションを削除
+    db.execute(
+        delete(TSimulation).where(TSimulation.id == simulation_id)
+    )
+    
+    db.commit()
+    db.close()
+    
+    flash('シミュレーションを削除しました', 'success')
+    return redirect(url_for('property.simulations'))
+
+
+@property_bp.route('/simulations/<int:simulation_id>/recalculate', methods=['POST'])
+@require_tenant_admin
+def simulation_recalculate(simulation_id):
+    """シミュレーション再計算"""
+    db = SessionLocal()
+    tenant_id = session.get('tenant_id')
+    
+    simulation = db.execute(
+        select(TSimulation).where(TSimulation.id == simulation_id, TSimulation.tenant_id == tenant_id)
+    ).scalar_one_or_none()
+    
+    if not simulation:
+        flash('シミュレーションが見つかりません', 'danger')
+        return redirect(url_for('property.simulations'))
+    
+    # シミュレーション計算を実行
+    if calculate_simulation(simulation, db):
+        flash('シミュレーションを再計算しました', 'success')
+    else:
+        flash('シミュレーションの計算に失敗しました', 'danger')
+    
+    db.close()
+    return redirect(url_for('property.simulation_detail', simulation_id=simulation_id))

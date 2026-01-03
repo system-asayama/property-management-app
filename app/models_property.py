@@ -119,3 +119,54 @@ class TGenkashokaku(Base):
     備考 = Column(Text, nullable=True)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
+
+class TSimulation(Base):
+    """T_シミュレーションテーブル"""
+    __tablename__ = 'T_シミュレーション'
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    tenant_id = Column(Integer, ForeignKey('T_テナント.id'), nullable=False)
+    名称 = Column(String(255), nullable=False)
+    物件id = Column(Integer, ForeignKey('T_物件.id'), nullable=True)
+    開始年度 = Column(Integer, nullable=False)
+    期間 = Column(Integer, nullable=False)
+    稼働率 = Column(Numeric(5, 2), default=95.00)
+    管理費率 = Column(Numeric(5, 2), default=5.00)
+    修繕費率 = Column(Numeric(5, 2), default=5.00)
+    固定資産税 = Column(Numeric(15, 2), default=0)
+    損害保険料 = Column(Numeric(15, 2), default=0)
+    ローン残高 = Column(Numeric(15, 2), default=0)
+    ローン金利 = Column(Numeric(5, 2), default=0)
+    ローン年間返済額 = Column(Numeric(15, 2), default=0)
+    その他収入 = Column(Numeric(15, 2), default=0)
+    その他経費 = Column(Numeric(15, 2), default=0)
+    その他所得 = Column(Numeric(15, 2), default=0)
+    税率 = Column(Numeric(5, 2), nullable=True)
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
+
+class TSimulationResult(Base):
+    """T_シミュレーション結果テーブル"""
+    __tablename__ = 'T_シミュレーション結果'
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    シミュレーションid = Column(Integer, ForeignKey('T_シミュレーション.id'), nullable=False)
+    年度 = Column(Integer, nullable=False)
+    家賃収入 = Column(Numeric(15, 2), default=0)
+    その他収入 = Column(Numeric(15, 2), default=0)
+    総収入 = Column(Numeric(15, 2), default=0)
+    管理費 = Column(Numeric(15, 2), default=0)
+    修繕費 = Column(Numeric(15, 2), default=0)
+    固定資産税 = Column(Numeric(15, 2), default=0)
+    損害保険料 = Column(Numeric(15, 2), default=0)
+    借入金利息 = Column(Numeric(15, 2), default=0)
+    減価償却費 = Column(Numeric(15, 2), default=0)
+    その他経費 = Column(Numeric(15, 2), default=0)
+    総経費 = Column(Numeric(15, 2), default=0)
+    不動産所得 = Column(Numeric(15, 2), default=0)
+    税金 = Column(Numeric(15, 2), default=0)
+    キャッシュフロー = Column(Numeric(15, 2), default=0)
+    ローン残高 = Column(Numeric(15, 2), default=0)
+    created_at = Column(DateTime, server_default=func.now())
