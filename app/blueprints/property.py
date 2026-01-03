@@ -900,6 +900,71 @@ def depreciation_calculate(property_id):
 
 # ==================== シミュレーション ====================
 
+def calculate_loan_payment(principal, annual_rate, years, method='元利均等'):
+    """
+    ローン返済額を計算（年間）
+    
+    Args:
+        principal: 借入金額（円）
+        annual_rate: 年利（%）
+        years: 返済期間（年）
+        method: 返済方法（'元利均等' or '元金均等'）
+    
+    Returns:
+        年間返済額（円）
+    """
+    principal = Decimal(str(principal))
+    annual_rate = Decimal(str(annual_rate))
+    years = int(years)
+    
+    if principal <= 0 or years <= 0:
+        return Decimal('0')
+    
+    if method == '元利均等':
+        # 元利均等返済
+        if annual_rate == 0:
+            # 金利0%の場合は単純に元金を分割
+            months = years * 12
+            monthly_payment = principal / months
+        else:
+            # 月利を計算
+            monthly_rate = annual_rate / Decimal('100') / Decimal('12')
+            months = years * 12
+            
+            # 元利均等返済の計算式
+            rate_plus_one = Decimal('1') + monthly_rate
+            power_term = rate_plus_one ** months
+            monthly_payment = principal * monthly_rate * power_term / (power_term - Decimal('1'))
+        
+        # 年間返済額
+        annual_payment = monthly_payment * Decimal('12')
+        
+    elif method == '元金均等':
+        # 元金均等返済（初年度）
+        months = years * 12
+        monthly_rate = annual_rate / Decimal('100') / Decimal('12')
+        
+        # 毎月の元金返済額
+        monthly_principal = principal / months
+        
+        # 初年度（1～12ヶ月目）の返済額を計算
+        annual_payment = Decimal('0')
+        remaining_principal = principal
+        
+        for month in range(12):
+            # 当月の利息
+            monthly_interest = remaining_principal * monthly_rate
+            # 当月の返済額
+            monthly_payment_amount = monthly_principal + monthly_interest
+            annual_payment += monthly_payment_amount
+            # 残高を更新
+            remaining_principal -= monthly_principal
+    else:
+        annual_payment = Decimal('0')
+    
+    return annual_payment
+
+
 def calculate_progressive_tax(total_income):
     """
     超過累進税率による税金計算（所得税+住民税）
@@ -1200,6 +1265,34 @@ def simulation_new():
         ローン残高 = Decimal(request.form.get('ローン残高', '0'))
         ローン金利 = Decimal(request.form.get('ローン金利', '0'))
         ローン年間返済額 = Decimal(request.form.get('ローン年間返済額', '0'))
+        
+        # ローン詳細情報（自動計算用）
+        借入金額 = request.form.get('借入金額')
+        返済期間_年 = request.form.get('返済期間_年')
+        返済方法 = request.form.get('返済方法')
+        返済開始日_str = request.form.get('返済開始日')
+        
+        # ローン詳細情報の変換
+        if 借入金額:
+            借入金額 = Decimal(借入金額)
+        else:
+            借入金額 = None
+        
+        if 返済期間_年:
+            返済期間_年 = int(返済期間_年)
+        else:
+            返済期間_年 = None
+        
+        if 返済開始日_str:
+            from datetime import datetime
+            返済開始日 = datetime.strptime(返済開始日_str, '%Y-%m-%d').date()
+        else:
+            返済開始日 = None
+        
+        # ローン返済額の自動計算
+        if 借入金額 and 返済期間_年 and 返済方法:
+            ローン年間返済額 = calculate_loan_payment(借入金額, ローン金利, 返済期間_年, 返済方法)
+            ローン残高 = 借入金額  # 初期残高を借入金額に設定
         その他収入 = Decimal(request.form.get('その他収入', '0'))
         その他経費 = Decimal(request.form.get('その他経費', '0'))
         減価償却費 = Decimal(request.form.get('減価償却費', '0'))
@@ -1258,6 +1351,11 @@ def simulation_new():
             ローン残高=ローン残高,
             ローン金利=ローン金利,
             ローン年間返済額=ローン年間返済額,
+            # ローン詳細情報
+            借入金額=借入金額,
+            返済期間_年=返済期間_年,
+            返済方法=返済方法,
+            返済開始日=返済開始日,
             その他収入=その他収入,
             その他経費=その他経費,
             減価償却費=減価償却費,
@@ -1378,6 +1476,42 @@ def simulation_edit(simulation_id):
         simulation.ローン残高 = Decimal(request.form.get('ローン残高', '0'))
         simulation.ローン金利 = Decimal(request.form.get('ローン金利', '0'))
         simulation.ローン年間返済額 = Decimal(request.form.get('ローン年間返済額', '0'))
+        
+        # ローン詳細情報（自動計算用）
+        借入金額 = request.form.get('借入金額')
+        返済期間_年 = request.form.get('返済期間_年')
+        返済方法 = request.form.get('返済方法')
+        返済開始日_str = request.form.get('返済開始日')
+        
+        # ローン詳細情報の変換
+        if 借入金額:
+            simulation.借入金額 = Decimal(借入金額)
+        else:
+            simulation.借入金額 = None
+        
+        if 返済期間_年:
+            simulation.返済期間_年 = int(返済期間_年)
+        else:
+            simulation.返済期間_年 = None
+        
+        simulation.返済方法 = 返済方法 if 返済方法 else None
+        
+        if 返済開始日_str:
+            from datetime import datetime
+            simulation.返済開始日 = datetime.strptime(返済開始日_str, '%Y-%m-%d').date()
+        else:
+            simulation.返済開始日 = None
+        
+        # ローン返済額の自動計算
+        if simulation.借入金額 and simulation.返済期間_年 and simulation.返済方法:
+            simulation.ローン年間返済額 = calculate_loan_payment(
+                simulation.借入金額, 
+                simulation.ローン金利, 
+                simulation.返済期間_年, 
+                simulation.返済方法
+            )
+            simulation.ローン残高 = simulation.借入金額  # 初期残高を借入金額に設定
+        
         simulation.その他収入 = Decimal(request.form.get('その他収入', '0'))
         simulation.その他経費 = Decimal(request.form.get('その他経費', '0'))
         simulation.減価償却費 = Decimal(request.form.get('減価償却費', '0'))

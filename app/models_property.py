@@ -162,6 +162,12 @@ class TSimulation(Base):
     ローン残高 = Column(Numeric(15, 2), default=0)
     ローン金利 = Column(Numeric(5, 2), default=0)
     ローン年間返済額 = Column(Numeric(15, 2), default=0)
+    
+    # ローン詳細情報（自動計算用）
+    借入金額 = Column(Numeric(15, 2), nullable=True)
+    返済期間_年 = Column(Integer, nullable=True)
+    返済方法 = Column(String(20), nullable=True)  # '元利均等' or '元金均等'
+    返済開始日 = Column(Date, nullable=True)
     その他収入 = Column(Numeric(15, 2), default=0)
     その他経費 = Column(Numeric(15, 2), default=0)
     減価償却費 = Column(Numeric(15, 2), default=0)
