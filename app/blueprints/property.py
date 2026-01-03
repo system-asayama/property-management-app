@@ -960,22 +960,28 @@ def calculate_simulation(simulation, db):
         その他経費 = simulation.その他経費
         
         # 減価償却費を計算
-        if simulation.物件id and property_data:
-            if property_data.償却方法 == '定額法':
+        # 手動入力値があればそれを優先、なければ物件データから自動計算
+        if simulation.減価償却費 and simulation.減価償却費 > 0:
+            # 手動入力値を使用
+            減価償却費 = simulation.減価償却費
+        elif simulation.物件id and property_data:
+            # 物件データから自動計算
+            if property_data.償却方法 == '定額法' and property_data.耐用年数:
                 減価償却費 = (property_data.取得価額 - (property_data.残存価額 or 0)) / property_data.耐用年数
-            elif property_data.償却方法 == '定率法':
+            elif property_data.償却方法 == '定率法' and property_data.耐用年数:
                 償却率 = Decimal('2.0') / property_data.耐用年数
                 # 簡易計算（実際は期首帳簿価額を追跡する必要がある）
                 減価償却費 = property_data.取得価額 * 償却率 * (Decimal('0.9') ** year_offset)
             else:
                 減価償却費 = Decimal('0')
-        else:
+        elif simulation.物件id is None:
             # 全物件の場合は簡易計算
             減価償却費 = Decimal('0')
-            if simulation.物件id is None:
-                for prop in properties:
-                    if prop.償却方法 == '定額法' and prop.耐用年数:
-                        減価償却費 += (prop.取得価額 - (prop.残存価額 or 0)) / prop.耐用年数
+            for prop in properties:
+                if prop.償却方法 == '定額法' and prop.耐用年数:
+                    減価償却費 += (prop.取得価額 - (prop.残存価額 or 0)) / prop.耐用年数
+        else:
+            減価償却費 = Decimal('0')
         
         総経費 = 管理費 + 修繕費 + 固定資産税 + 損害保険料 + 借入金利息 + 減価償却費 + その他経費
         
@@ -1083,6 +1089,7 @@ def simulation_new():
         ローン年間返済額 = Decimal(request.form.get('ローン年間返済額', '0'))
         その他収入 = Decimal(request.form.get('その他収入', '0'))
         その他経費 = Decimal(request.form.get('その他経費', '0'))
+        減価償却費 = Decimal(request.form.get('減価償却費', '0'))
         その他所得 = Decimal(request.form.get('その他所得', '0'))
         
         # 物件IDの処理
@@ -1108,6 +1115,7 @@ def simulation_new():
             ローン年間返済額=ローン年間返済額,
             その他収入=その他収入,
             その他経費=その他経費,
+            減価償却費=減価償却費,
             その他所得=その他所得
         )
         

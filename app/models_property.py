@@ -141,6 +141,7 @@ class TSimulation(Base):
     ローン年間返済額 = Column(Numeric(15, 2), default=0)
     その他収入 = Column(Numeric(15, 2), default=0)
     その他経費 = Column(Numeric(15, 2), default=0)
+    減価償却費 = Column(Numeric(15, 2), default=0)
     その他所得 = Column(Numeric(15, 2), default=0)
     税率 = Column(Numeric(5, 2), nullable=True)
     created_at = Column(DateTime, server_default=func.now())
