@@ -194,6 +194,20 @@ def property_edit(id):
         property_data.償却方法 = request.form.get('償却方法')
         property_data.残存価額 = Decimal(request.form.get('残存価額')) if request.form.get('残存価額') else None
         property_data.備考 = request.form.get('備考')
+        # 建物付属設備
+        property_data.付属設備_取得価額 = Decimal(request.form.get('付属設備_取得価額')) if request.form.get('付属設備_取得価額') else None
+        property_data.付属設備_取得年月日 = datetime.strptime(request.form.get('付属設備_取得年月日'), '%Y-%m-%d').date() if request.form.get('付属設備_取得年月日') else None
+        property_data.付属設備_耐用年数 = int(request.form.get('付属設備_耐用年数')) if request.form.get('付属設備_耐用年数') else None
+        property_data.付属設備_償却方法 = request.form.get('付属設備_償却方法')
+        property_data.付属設備_残存価額 = Decimal(request.form.get('付属設備_残存価額')) if request.form.get('付属設備_残存価額') else None
+        property_data.付属設備_備考 = request.form.get('付属設備_備考')
+        # 構築物
+        property_data.構築物_取得価額 = Decimal(request.form.get('構築物_取得価額')) if request.form.get('構築物_取得価額') else None
+        property_data.構築物_取得年月日 = datetime.strptime(request.form.get('構築物_取得年月日'), '%Y-%m-%d').date() if request.form.get('構築物_取得年月日') else None
+        property_data.構築物_耐用年数 = int(request.form.get('構築物_耐用年数')) if request.form.get('構築物_耐用年数') else None
+        property_data.構築物_償却方法 = request.form.get('構築物_償却方法')
+        property_data.構築物_残存価額 = Decimal(request.form.get('構築物_残存価額')) if request.form.get('構築物_残存価額') else None
+        property_data.構築物_備考 = request.form.get('構築物_備考')
         property_data.updated_at = datetime.now()
         
         db.commit()
