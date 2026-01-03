@@ -152,20 +152,17 @@ def create_app() -> Flask:
     try:
         from .utils.auto_migrate import auto_migrate_all
         from .db import engine
-        from . import models_login, models_auth, models_property
+        from . import models_login, models_property
         
         # マイグレーション対象のモデルとテーブル名のリスト
         migration_targets = [
             # models_login
-            (models_login.TSystemAdmin, 'T_システム管理者'),
-            (models_login.TTenantAdmin, 'T_テナント管理者'),
-            (models_login.TAdmin, 'T_管理者'),
-            (models_login.TEmployee, 'T_従業員'),
-            # models_auth
-            (models_auth.TTenant, 'T_テナント'),
-            (models_auth.TStore, 'T_店舗'),
-            (models_auth.TAdminStore, 'T_管理者_店舗'),
-            (models_auth.TEmployeeStore, 'T_従業員_店舗'),
+            (models_login.TKanrisha, 'T_管理者'),
+            (models_login.TJugyoin, 'T_従業員'),
+            (models_login.TTenant, 'T_テナント'),
+            (models_login.TTenpo, 'T_店舗'),
+            (models_login.TKanrishaTenpo, 'T_管理者_店舗'),
+            (models_login.TJugyoinTenpo, 'T_従業員_店舗'),
             # models_property
             (models_property.TProperty, 'T_物件'),
             (models_property.TRoom, 'T_部屋'),
