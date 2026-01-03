@@ -167,57 +167,62 @@ def property_detail(id):
 @require_tenant_admin
 def property_edit(id):
     """物件編集"""
-    db = SessionLocal()
-    tenant_id = session.get('tenant_id')
-    
-    property_data = db.execute(
-        select(TBukken).where(TBukken.id == id, TBukken.tenant_id == tenant_id, TBukken.有効 == 1)
-    ).scalar_one_or_none()
-    
-    if not property_data:
-        flash('物件が見つかりません', 'danger')
+    try:
+        db = SessionLocal()
+        tenant_id = session.get('tenant_id')
+        
+        property_data = db.execute(
+            select(TBukken).where(TBukken.id == id, TBukken.tenant_id == tenant_id, TBukken.有効 == 1)
+        ).scalar_one_or_none()
+        
+        if not property_data:
+            flash('物件が見つかりません', 'danger')
+            return redirect(url_for('property.properties'))
+        
+        if request.method == 'POST':
+            property_data.物件名 = request.form.get('物件名')
+            property_data.物件種別 = request.form.get('物件種別')
+            property_data.郵便番号 = request.form.get('郵便番号')
+            property_data.住所 = request.form.get('住所')
+            property_data.建築年月 = datetime.strptime(request.form.get('建築年月'), '%Y-%m-%d').date() if request.form.get('建築年月') else None
+            property_data.延床面積 = Decimal(request.form.get('延床面積')) if request.form.get('延床面積') else None
+            property_data.構造 = request.form.get('構造')
+            property_data.階数 = int(request.form.get('階数')) if request.form.get('階数') else None
+            property_data.部屋数 = int(request.form.get('部屋数')) if request.form.get('部屋数') else None
+            property_data.取得価額 = Decimal(request.form.get('取得価額')) if request.form.get('取得価額') else None
+            property_data.取得年月日 = datetime.strptime(request.form.get('取得年月日'), '%Y-%m-%d').date() if request.form.get('取得年月日') else None
+            property_data.耐用年数 = int(request.form.get('耐用年数')) if request.form.get('耐用年数') else None
+            property_data.償却方法 = request.form.get('償却方法')
+            property_data.残存価額 = Decimal(request.form.get('残存価額')) if request.form.get('残存価額') else None
+            property_data.備考 = request.form.get('備考')
+            # 建物付属設備
+            property_data.付属設備_取得価額 = Decimal(request.form.get('付属設備_取得価額')) if request.form.get('付属設備_取得価額') else None
+            property_data.付属設備_取得年月日 = datetime.strptime(request.form.get('付属設備_取得年月日'), '%Y-%m-%d').date() if request.form.get('付属設備_取得年月日') else None
+            property_data.付属設備_耐用年数 = int(request.form.get('付属設備_耐用年数')) if request.form.get('付属設備_耐用年数') else None
+            property_data.付属設備_償却方法 = request.form.get('付属設備_償却方法')
+            property_data.付属設備_残存価額 = Decimal(request.form.get('付属設備_残存価額')) if request.form.get('付属設備_残存価額') else None
+            property_data.付属設備_備考 = request.form.get('付属設備_備考')
+            # 構築物
+            property_data.構築物_取得価額 = Decimal(request.form.get('構築物_取得価額')) if request.form.get('構築物_取得価額') else None
+            property_data.構築物_取得年月日 = datetime.strptime(request.form.get('構築物_取得年月日'), '%Y-%m-%d').date() if request.form.get('構築物_取得年月日') else None
+            property_data.構築物_耐用年数 = int(request.form.get('構築物_耐用年数')) if request.form.get('構築物_耐用年数') else None
+            property_data.構築物_償却方法 = request.form.get('構築物_償却方法')
+            property_data.構築物_残存価額 = Decimal(request.form.get('構築物_残存価額')) if request.form.get('構築物_残存価額') else None
+            property_data.構築物_備考 = request.form.get('構築物_備考')
+            property_data.updated_at = datetime.now()
+            
+            db.commit()
+            
+            flash('物件を更新しました', 'success')
+            return redirect(url_for('property.property_detail', id=id))
+        
+        return render_template('property_property_edit.html', property=property_data)
+    except Exception as e:
+        import traceback
+        print(f"⚠️ 物件編集エラー: {e}")
+        print(traceback.format_exc())
+        flash(f'エラーが発生しました: {str(e)}', 'danger')
         return redirect(url_for('property.properties'))
-    
-    if request.method == 'POST':
-        property_data.物件名 = request.form.get('物件名')
-        property_data.物件種別 = request.form.get('物件種別')
-        property_data.郵便番号 = request.form.get('郵便番号')
-        property_data.住所 = request.form.get('住所')
-        property_data.建築年月 = datetime.strptime(request.form.get('建築年月'), '%Y-%m-%d').date() if request.form.get('建築年月') else None
-        property_data.延床面積 = Decimal(request.form.get('延床面積')) if request.form.get('延床面積') else None
-        property_data.構造 = request.form.get('構造')
-        property_data.階数 = int(request.form.get('階数')) if request.form.get('階数') else None
-        property_data.部屋数 = int(request.form.get('部屋数')) if request.form.get('部屋数') else None
-        property_data.取得価額 = Decimal(request.form.get('取得価額')) if request.form.get('取得価額') else None
-        property_data.取得年月日 = datetime.strptime(request.form.get('取得年月日'), '%Y-%m-%d').date() if request.form.get('取得年月日') else None
-        property_data.耐用年数 = int(request.form.get('耐用年数')) if request.form.get('耐用年数') else None
-        property_data.償却方法 = request.form.get('償却方法')
-        property_data.残存価額 = Decimal(request.form.get('残存価額')) if request.form.get('残存価額') else None
-        property_data.備考 = request.form.get('備考')
-        # 建物付属設備
-        property_data.付属設備_取得価額 = Decimal(request.form.get('付属設備_取得価額')) if request.form.get('付属設備_取得価額') else None
-        property_data.付属設備_取得年月日 = datetime.strptime(request.form.get('付属設備_取得年月日'), '%Y-%m-%d').date() if request.form.get('付属設備_取得年月日') else None
-        property_data.付属設備_耐用年数 = int(request.form.get('付属設備_耐用年数')) if request.form.get('付属設備_耐用年数') else None
-        property_data.付属設備_償却方法 = request.form.get('付属設備_償却方法')
-        property_data.付属設備_残存価額 = Decimal(request.form.get('付属設備_残存価額')) if request.form.get('付属設備_残存価額') else None
-        property_data.付属設備_備考 = request.form.get('付属設備_備考')
-        # 構築物
-        property_data.構築物_取得価額 = Decimal(request.form.get('構築物_取得価額')) if request.form.get('構築物_取得価額') else None
-        property_data.構築物_取得年月日 = datetime.strptime(request.form.get('構築物_取得年月日'), '%Y-%m-%d').date() if request.form.get('構築物_取得年月日') else None
-        property_data.構築物_耐用年数 = int(request.form.get('構築物_耐用年数')) if request.form.get('構築物_耐用年数') else None
-        property_data.構築物_償却方法 = request.form.get('構築物_償却方法')
-        property_data.構築物_残存価額 = Decimal(request.form.get('構築物_残存価額')) if request.form.get('構築物_残存価額') else None
-        property_data.構築物_備考 = request.form.get('構築物_備考')
-        property_data.updated_at = datetime.now()
-        
-        db.commit()
-        
-        flash('物件を更新しました', 'success')
-        return redirect(url_for('property.property_detail', id=id))
-    
-    return render_template('property_property_edit.html', property=property_data)
-
-
 @property_bp.route('/properties/<int:id>/delete', methods=['POST'])
 @require_tenant_admin
 def property_delete(id):
