@@ -238,7 +238,7 @@ def room_new(property_id):
     
     # 物件の存在確認
     property_data = db.execute(
-        select(TBukken).where(TBukken.id == property_id, TBukken.tenant_id == tenant_id, TBukken.有効 == 1)
+        select(TBukken).where(TBukken.id == property_id, TBukken.tenant_id == tenant_id)
     ).scalar_one_or_none()
     
     if not property_data:
@@ -362,7 +362,7 @@ def room_delete(id):
     
     # 物件情報を取得してテナントIDを確認
     property_data = db.execute(
-        select(TBukken).where(TBukken.id == room.property_id, TBukken.tenant_id == tenant_id, TBukken.有効 == 1)
+        select(TBukken).where(TBukken.id == room.property_id, TBukken.tenant_id == tenant_id)
     ).scalar_one_or_none()
     
     if not property_data:
@@ -1325,7 +1325,7 @@ def expense_list_property(property_id):
     
     # 物件の存在確認
     property_data = db.execute(
-        select(TBukken).where(TBukken.id == property_id, TBukken.tenant_id == tenant_id, TBukken.有効 == 1)
+        select(TBukken).where(TBukken.id == property_id, TBukken.tenant_id == tenant_id)
     ).scalar_one_or_none()
     
     if not property_data:
@@ -1357,7 +1357,7 @@ def expense_new_property(property_id):
     
     # 物件の存在確認
     property_data = db.execute(
-        select(TBukken).where(TBukken.id == property_id, TBukken.tenant_id == tenant_id, TBukken.有効 == 1)
+        select(TBukken).where(TBukken.id == property_id, TBukken.tenant_id == tenant_id)
     ).scalar_one_or_none()
     
     if not property_data:
@@ -1400,7 +1400,7 @@ def expense_edit_property(property_id, expense_id):
     
     # 物件の存在確認
     property_data = db.execute(
-        select(TBukken).where(TBukken.id == property_id, TBukken.tenant_id == tenant_id, TBukken.有効 == 1)
+        select(TBukken).where(TBukken.id == property_id, TBukken.tenant_id == tenant_id)
     ).scalar_one_or_none()
     
     if not property_data:
@@ -1449,7 +1449,7 @@ def expense_delete_property(property_id, expense_id):
     
     # 物件の存在確認
     property_data = db.execute(
-        select(TBukken).where(TBukken.id == property_id, TBukken.tenant_id == tenant_id, TBukken.有効 == 1)
+        select(TBukken).where(TBukken.id == property_id, TBukken.tenant_id == tenant_id)
     ).scalar_one_or_none()
     
     if not property_data:
@@ -1484,7 +1484,7 @@ def expense_list_room(room_id):
     
     # 部屋の存在確認
     room = db.execute(
-        select(THeya).where(THeya.id == room_id, THeya.有効 == 1)
+        select(THeya).where(THeya.id == room_id)
     ).scalar_one_or_none()
     
     if not room:
@@ -1493,7 +1493,7 @@ def expense_list_room(room_id):
     
     # 物件情報を取得してテナントIDを確認
     property_data = db.execute(
-        select(TBukken).where(TBukken.id == room.property_id, TBukken.tenant_id == tenant_id, TBukken.有効 == 1)
+        select(TBukken).where(TBukken.id == room.property_id, TBukken.tenant_id == tenant_id)
     ).scalar_one_or_none()
     
     if not property_data:
@@ -1526,7 +1526,7 @@ def expense_new_room(room_id):
     
     # 部屋の存在確認
     room = db.execute(
-        select(THeya).where(THeya.id == room_id, THeya.有効 == 1)
+        select(THeya).where(THeya.id == room_id)
     ).scalar_one_or_none()
     
     if not room:
@@ -1535,7 +1535,7 @@ def expense_new_room(room_id):
     
     # 物件情報を取得してテナントIDを確認
     property_data = db.execute(
-        select(TBukken).where(TBukken.id == room.property_id, TBukken.tenant_id == tenant_id, TBukken.有効 == 1)
+        select(TBukken).where(TBukken.id == room.property_id, TBukken.tenant_id == tenant_id)
     ).scalar_one_or_none()
     
     if not property_data:
@@ -1579,7 +1579,7 @@ def expense_edit_room(room_id, expense_id):
     
     # 部屋の存在確認
     room = db.execute(
-        select(THeya).where(THeya.id == room_id, THeya.有効 == 1)
+        select(THeya).where(THeya.id == room_id)
     ).scalar_one_or_none()
     
     if not room:
@@ -1588,7 +1588,7 @@ def expense_edit_room(room_id, expense_id):
     
     # 物件情報を取得してテナントIDを確認
     property_data = db.execute(
-        select(TBukken).where(TBukken.id == room.property_id, TBukken.tenant_id == tenant_id, TBukken.有効 == 1)
+        select(TBukken).where(TBukken.id == room.property_id, TBukken.tenant_id == tenant_id)
     ).scalar_one_or_none()
     
     if not property_data:
@@ -1638,7 +1638,7 @@ def expense_delete_room(room_id, expense_id):
     
     # 部屋の存在確認
     room = db.execute(
-        select(THeya).where(THeya.id == room_id, THeya.有効 == 1)
+        select(THeya).where(THeya.id == room_id)
     ).scalar_one_or_none()
     
     if not room:
@@ -1647,7 +1647,7 @@ def expense_delete_room(room_id, expense_id):
     
     # 物件情報を取得してテナントIDを確認
     property_data = db.execute(
-        select(TBukken).where(TBukken.id == room.property_id, TBukken.tenant_id == tenant_id, TBukken.有効 == 1)
+        select(TBukken).where(TBukken.id == room.property_id, TBukken.tenant_id == tenant_id)
     ).scalar_one_or_none()
     
     if not property_data:
