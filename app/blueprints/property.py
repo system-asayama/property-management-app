@@ -911,34 +911,41 @@ def calculate_simulation(simulation, db):
     )
     db.commit()
     
-    # 物件データを取得
-    if simulation.物件id:
-        property_data = db.execute(
-            select(TBukken).where(TBukken.id == simulation.物件id, TBukken.tenant_id == tenant_id)
-        ).scalar_one_or_none()
-        
-        if not property_data:
-            return False
-        
-        # 物件の部屋を取得
-        rooms = db.execute(
-            select(THeya).where(THeya.property_id == property_data.id, THeya.有効 == 1)
-        ).scalars().all()
-        
-        # 年間家賃収入を計算
-        total_rent = sum(room.賃料 or 0 for room in rooms) * 12
+    # シミュレーション種別による分岐
+    property_data = None
+    
+    if simulation.シミュレーション種別 == '独立':
+        # 独立シミュレーション: 手動入力値を使用
+        total_rent = simulation.年間家賃収入 or Decimal('0')
     else:
-        # 全物件の場合
-        properties = db.execute(
-            select(TBukken).where(TBukken.tenant_id == tenant_id, TBukken.有効 == 1)
-        ).scalars().all()
-        
-        total_rent = Decimal('0')
-        for prop in properties:
+        # 物件ベースシミュレーション: 物件データから取得
+        if simulation.物件id:
+            property_data = db.execute(
+                select(TBukken).where(TBukken.id == simulation.物件id, TBukken.tenant_id == tenant_id)
+            ).scalar_one_or_none()
+            
+            if not property_data:
+                return False
+            
+            # 物件の部屋を取得
             rooms = db.execute(
-                select(THeya).where(THeya.property_id == prop.id, THeya.有効 == 1)
+                select(THeya).where(THeya.property_id == property_data.id, THeya.有効 == 1)
             ).scalars().all()
-            total_rent += sum(room.賃料 or 0 for room in rooms) * 12
+            
+            # 年間家賃収入を計算
+            total_rent = sum(room.賃料 or 0 for room in rooms) * 12
+        else:
+            # 全物件の場合
+            properties = db.execute(
+                select(TBukken).where(TBukken.tenant_id == tenant_id, TBukken.有効 == 1)
+            ).scalars().all()
+            
+            total_rent = Decimal('0')
+            for prop in properties:
+                rooms = db.execute(
+                    select(THeya).where(THeya.property_id == prop.id, THeya.有効 == 1)
+                ).scalars().all()
+                total_rent += sum(room.賃料 or 0 for room in rooms) * 12
     
     # 年度ごとにシミュレーション
     current_loan_balance = simulation.ローン残高
@@ -1076,7 +1083,10 @@ def simulation_new():
     if request.method == 'POST':
         # フォームデータを取得
         名称 = request.form.get('名称')
+        シミュレーション種別 = request.form.get('シミュレーション種別', '物件ベース')
         物件id = request.form.get('物件id')
+        年間家賃収入 = request.form.get('年間家賃収入')
+        部屋数 = request.form.get('部屋数')
         開始年度 = int(request.form.get('開始年度', date.today().year))
         期間 = int(request.form.get('期間', 10))
         稼働率 = Decimal(request.form.get('稼働率', '95.00'))
@@ -1098,11 +1108,25 @@ def simulation_new():
         else:
             物件id = int(物件id)
         
+        # 独立シミュレーション用フィールドの変換
+        if 年間家賃収入:
+            年間家賃収入 = Decimal(年間家賃収入) if 年間家賃収入 else None
+        else:
+            年間家賃収入 = None
+        
+        if 部屋数:
+            部屋数 = int(部屋数) if 部屋数 else None
+        else:
+            部屋数 = None
+        
         # シミュレーションを作成
         simulation = TSimulation(
             tenant_id=tenant_id,
             名称=名称,
+            シミュレーション種別=シミュレーション種別,
             物件id=物件id,
+            年間家賃収入=年間家賃収入,
+            部屋数=部屋数,
             開始年度=開始年度,
             期間=期間,
             稼働率=稼働率,

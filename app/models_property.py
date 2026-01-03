@@ -128,7 +128,16 @@ class TSimulation(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     tenant_id = Column(Integer, ForeignKey('T_テナント.id'), nullable=False)
     名称 = Column(String(255), nullable=False)
+    
+    # シミュレーション種別
+    シミュレーション種別 = Column(String(20), nullable=False, server_default='物件ベース')
+    
+    # 物件ベースシミュレーション用
     物件id = Column(Integer, ForeignKey('T_物件.id'), nullable=True)
+    
+    # 独立シミュレーション用
+    年間家賃収入 = Column(Numeric(15, 2), nullable=True)
+    部屋数 = Column(Integer, nullable=True)
     開始年度 = Column(Integer, nullable=False)
     期間 = Column(Integer, nullable=False)
     稼働率 = Column(Numeric(5, 2), default=95.00)
