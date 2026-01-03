@@ -348,6 +348,20 @@
                         <div class="form-text">元本+利息の合計額（自動計算）</div>
                     </div>
                 </div>
+                
+                <!-- 元本と利息の内訳 -->
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="年間元本返済額" class="form-label">└─ 元本返済額（円/年）</label>
+                        <input type="text" class="form-control bg-light" id="年間元本返済額" readonly>
+                        <div class="form-text">初年度の元本返済額</div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="年間利息支払額" class="form-label">└─ 利息支払額（円/年）</label>
+                        <input type="text" class="form-control bg-light" id="年間利息支払額" readonly>
+                        <div class="form-text">初年度の利息支払額</div>
+                    </div>
+                </div>
             </div>
         </div>
         
@@ -360,15 +374,30 @@
             
             if (principal > 0 && years > 0 && method) {
                 let annualPayment = 0;
+                let annualPrincipalPayment = 0;
+                let annualInterestPayment = 0;
                 
                 if (method === '元利均等') {
                     // 元利均等返済
                     if (rate === 0) {
                         annualPayment = principal / years;
+                        annualPrincipalPayment = annualPayment;
+                        annualInterestPayment = 0;
                     } else {
                         const monthlyRate = rate / 100 / 12;
                         const months = years * 12;
                         const monthlyPayment = principal * monthlyRate * Math.pow(1 + monthlyRate, months) / (Math.pow(1 + monthlyRate, months) - 1);
+                        
+                        // 初年度の元本と利息を計算
+                        let remainingPrincipal = principal;
+                        for (let month = 0; month < 12; month++) {
+                            const monthlyInterest = remainingPrincipal * monthlyRate;
+                            const monthlyPrincipal = monthlyPayment - monthlyInterest;
+                            annualPrincipalPayment += monthlyPrincipal;
+                            annualInterestPayment += monthlyInterest;
+                            remainingPrincipal -= monthlyPrincipal;
+                        }
+                        
                         annualPayment = monthlyPayment * 12;
                     }
                 } else if (method === '元金均等') {
@@ -383,6 +412,8 @@
                     for (let month = 0; month < 12; month++) {
                         const monthlyInterest = remainingPrincipal * monthlyRate;
                         annualTotal += monthlyPrincipal + monthlyInterest;
+                        annualPrincipalPayment += monthlyPrincipal;
+                        annualInterestPayment += monthlyInterest;
                         remainingPrincipal -= monthlyPrincipal;
                     }
                     
@@ -391,8 +422,15 @@
                 
                 document.getElementById('ローン年間返済額').value = Math.round(annualPayment);
                 document.getElementById('ローン残高').value = Math.round(principal);
+                document.getElementById('年間元本返済額').value = Math.round(annualPrincipalPayment).toLocaleString();
+                document.getElementById('年間利息支払額').value = Math.round(annualInterestPayment).toLocaleString();
             }
         }
+        
+        // ページ読み込み時に内訳を計算
+        window.addEventListener('DOMContentLoaded', function() {
+            calculateLoanPayment();
+        });
         </script>
         
         <!-- 税金設定 -->

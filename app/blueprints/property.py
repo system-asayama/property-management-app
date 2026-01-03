@@ -911,14 +911,17 @@ def calculate_loan_payment(principal, annual_rate, years, method='元利均等')
         method: 返済方法（'元利均等' or '元金均等'）
     
     Returns:
-        年間返済額（円）
+        tuple: (年間返済額, 年間元本返済額, 年間利息支払額)
     """
     principal = Decimal(str(principal))
     annual_rate = Decimal(str(annual_rate))
     years = int(years)
     
     if principal <= 0 or years <= 0:
-        return Decimal('0')
+        return Decimal('0'), Decimal('0'), Decimal('0')
+    
+    annual_principal_payment = Decimal('0')
+    annual_interest_payment = Decimal('0')
     
     if method == '元利均等':
         # 元利均等返済
@@ -926,6 +929,9 @@ def calculate_loan_payment(principal, annual_rate, years, method='元利均等')
             # 金利0%の場合は単純に元金を分割
             months = years * 12
             monthly_payment = principal / months
+            annual_payment = monthly_payment * Decimal('12')
+            annual_principal_payment = annual_payment
+            annual_interest_payment = Decimal('0')
         else:
             # 月利を計算
             monthly_rate = annual_rate / Decimal('100') / Decimal('12')
@@ -935,9 +941,17 @@ def calculate_loan_payment(principal, annual_rate, years, method='元利均等')
             rate_plus_one = Decimal('1') + monthly_rate
             power_term = rate_plus_one ** months
             monthly_payment = principal * monthly_rate * power_term / (power_term - Decimal('1'))
-        
-        # 年間返済額
-        annual_payment = monthly_payment * Decimal('12')
+            
+            # 初年度の元本と利息を計算
+            remaining_principal = principal
+            for month in range(12):
+                monthly_interest = remaining_principal * monthly_rate
+                monthly_principal = monthly_payment - monthly_interest
+                annual_principal_payment += monthly_principal
+                annual_interest_payment += monthly_interest
+                remaining_principal -= monthly_principal
+            
+            annual_payment = monthly_payment * Decimal('12')
         
     elif method == '元金均等':
         # 元金均等返済（初年度）
@@ -957,12 +971,16 @@ def calculate_loan_payment(principal, annual_rate, years, method='元利均等')
             # 当月の返済額
             monthly_payment_amount = monthly_principal + monthly_interest
             annual_payment += monthly_payment_amount
+            annual_principal_payment += monthly_principal
+            annual_interest_payment += monthly_interest
             # 残高を更新
             remaining_principal -= monthly_principal
     else:
         annual_payment = Decimal('0')
+        annual_principal_payment = Decimal('0')
+        annual_interest_payment = Decimal('0')
     
-    return annual_payment
+    return annual_payment, annual_principal_payment, annual_interest_payment
 
 
 def calculate_progressive_tax(total_income):
@@ -1291,7 +1309,7 @@ def simulation_new():
         
         # ローン返済額の自動計算
         if 借入金額 and 返済期間_年 and 返済方法:
-            ローン年間返済額 = calculate_loan_payment(借入金額, ローン金利, 返済期間_年, 返済方法)
+            ローン年間返済額, _, _ = calculate_loan_payment(借入金額, ローン金利, 返済期間_年, 返済方法)
             ローン残高 = 借入金額  # 初期残高を借入金額に設定
         その他収入 = Decimal(request.form.get('その他収入', '0'))
         その他経費 = Decimal(request.form.get('その他経費', '0'))
@@ -1504,7 +1522,7 @@ def simulation_edit(simulation_id):
         
         # ローン返済額の自動計算
         if simulation.借入金額 and simulation.返済期間_年 and simulation.返済方法:
-            simulation.ローン年間返済額 = calculate_loan_payment(
+            simulation.ローン年間返済額, _, _ = calculate_loan_payment(
                 simulation.借入金額, 
                 simulation.ローン金利, 
                 simulation.返済期間_年, 
