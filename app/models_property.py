@@ -153,6 +153,25 @@ class TSimulation(Base):
     減価償却費 = Column(Numeric(15, 2), default=0)
     その他所得 = Column(Numeric(15, 2), default=0)
     税率 = Column(Numeric(5, 2), nullable=True)
+    
+    # 減価償却設定（建物部分）
+    建物_取得価額 = Column(Numeric(15, 2), nullable=True, default=0)
+    建物_耐用年数 = Column(Integer, nullable=True, default=47)
+    建物_償却方法 = Column(String(20), nullable=True, default='定額法')
+    建物_残存価額 = Column(Numeric(15, 2), nullable=True, default=0)
+    
+    # 減価償却設定（建物付属設備）
+    付属設備_取得価額 = Column(Numeric(15, 2), nullable=True, default=0)
+    付属設備_耐用年数 = Column(Integer, nullable=True, default=15)
+    付属設備_償却方法 = Column(String(20), nullable=True, default='定額法')
+    付属設備_残存価額 = Column(Numeric(15, 2), nullable=True, default=0)
+    
+    # 減価償却設定（構築物）
+    構築物_取得価額 = Column(Numeric(15, 2), nullable=True, default=0)
+    構築物_耐用年数 = Column(Integer, nullable=True, default=20)
+    構築物_償却方法 = Column(String(20), nullable=True, default='定額法')
+    構築物_残存価額 = Column(Numeric(15, 2), nullable=True, default=0)
+    
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 

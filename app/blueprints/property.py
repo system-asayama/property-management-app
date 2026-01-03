@@ -966,29 +966,37 @@ def calculate_simulation(simulation, db):
         借入金利息 = current_loan_balance * (simulation.ローン金利 / 100)
         その他経費 = simulation.その他経費
         
-        # 減価償却費を計算
-        # 手動入力値があればそれを優先、なければ物件データから自動計算
-        if simulation.減価償却費 and simulation.減価償却費 > 0:
-            # 手動入力値を使用
-            減価償却費 = simulation.減価償却費
-        elif simulation.物件id and property_data:
-            # 物件データから自動計算
-            if property_data.償却方法 == '定額法' and property_data.耐用年数:
-                減価償却費 = (property_data.取得価額 - (property_data.残存価額 or 0)) / property_data.耐用年数
-            elif property_data.償却方法 == '定率法' and property_data.耐用年数:
-                償却率 = Decimal('2.0') / property_data.耐用年数
+        # 減価償却費を計算（3分割方式）
+        減価償却費 = Decimal('0')
+        
+        # 建物部分の減価償却費
+        if simulation.建物_取得価額 and simulation.建物_取得価額 > 0:
+            if simulation.建物_償却方法 == '定額法' and simulation.建物_耐用年数:
+                減価償却費 += (simulation.建物_取得価額 - simulation.建物_残存価額) / simulation.建物_耐用年数
+            elif simulation.建物_償却方法 == '定率法' and simulation.建物_耐用年数:
+                償却率 = Decimal('2.0') / simulation.建物_耐用年数
                 # 簡易計算（実際は期首帳簿価額を追跡する必要がある）
-                減価償却費 = property_data.取得価額 * 償却率 * (Decimal('0.9') ** year_offset)
-            else:
-                減価償却費 = Decimal('0')
-        elif simulation.物件id is None:
-            # 全物件の場合は簡易計算
-            減価償却費 = Decimal('0')
-            for prop in properties:
-                if prop.償却方法 == '定額法' and prop.耐用年数:
-                    減価償却費 += (prop.取得価額 - (prop.残存価額 or 0)) / prop.耐用年数
-        else:
-            減価償却費 = Decimal('0')
+                減価償却費 += simulation.建物_取得価額 * 償却率 * (Decimal('0.9') ** year_offset)
+        
+        # 建物付属設備の減価償却費
+        if simulation.付属設備_取得価額 and simulation.付属設備_取得価額 > 0:
+            if simulation.付属設備_償却方法 == '定額法' and simulation.付属設備_耐用年数:
+                減価償却費 += (simulation.付属設備_取得価額 - simulation.付属設備_残存価額) / simulation.付属設備_耐用年数
+            elif simulation.付属設備_償却方法 == '定率法' and simulation.付属設備_耐用年数:
+                償却率 = Decimal('2.0') / simulation.付属設備_耐用年数
+                減価償却費 += simulation.付属設備_取得価額 * 償却率 * (Decimal('0.9') ** year_offset)
+        
+        # 構築物の減価償却費
+        if simulation.構築物_取得価額 and simulation.構築物_取得価額 > 0:
+            if simulation.構築物_償却方法 == '定額法' and simulation.構築物_耐用年数:
+                減価償却費 += (simulation.構築物_取得価額 - simulation.構築物_残存価額) / simulation.構築物_耐用年数
+            elif simulation.構築物_償却方法 == '定率法' and simulation.構築物_耐用年数:
+                償却率 = Decimal('2.0') / simulation.構築物_耐用年数
+                減価償却費 += simulation.構築物_取得価額 * 償却率 * (Decimal('0.9') ** year_offset)
+        
+        # 旧方式の減価償却費が設定されている場合はそれを使用（互換性のため）
+        if 減価償却費 == 0 and simulation.減価償却費 and simulation.減価償却費 > 0:
+            減価償却費 = simulation.減価償却費
         
         総経費 = 管理費 + 修繕費 + 固定資産税 + 損害保険料 + 借入金利息 + 減価償却費 + その他経費
         
@@ -1102,6 +1110,24 @@ def simulation_new():
         減価償却費 = Decimal(request.form.get('減価償却費', '0'))
         その他所得 = Decimal(request.form.get('その他所得', '0'))
         
+        # 減価償却設定（建物部分）
+        建物_取得価額 = Decimal(request.form.get('建物_取得価額', '0'))
+        建物_耐用年数 = int(request.form.get('建物_耐用年数', '47'))
+        建物_償却方法 = request.form.get('建物_償却方法', '定額法')
+        建物_残存価額 = Decimal(request.form.get('建物_残存価額', '0'))
+        
+        # 減価償却設定（建物付属設備）
+        付属設備_取得価額 = Decimal(request.form.get('付属設備_取得価額', '0'))
+        付属設備_耐用年数 = int(request.form.get('付属設備_耐用年数', '15'))
+        付属設備_償却方法 = request.form.get('付属設備_償却方法', '定額法')
+        付属設備_残存価額 = Decimal(request.form.get('付属設備_残存価額', '0'))
+        
+        # 減価償却設定（構築物）
+        構築物_取得価額 = Decimal(request.form.get('構築物_取得価額', '0'))
+        構築物_耐用年数 = int(request.form.get('構築物_耐用年数', '20'))
+        構築物_償却方法 = request.form.get('構築物_償却方法', '定額法')
+        構築物_残存価額 = Decimal(request.form.get('構築物_残存価額', '0'))
+        
         # 物件IDの処理
         if 物件id == '' or 物件id == 'all':
             物件id = None
@@ -1140,7 +1166,20 @@ def simulation_new():
             その他収入=その他収入,
             その他経費=その他経費,
             減価償却費=減価償却費,
-            その他所得=その他所得
+            その他所得=その他所得,
+            # 減価償却設定
+            建物_取得価額=建物_取得価額,
+            建物_耐用年数=建物_耐用年数,
+            建物_償却方法=建物_償却方法,
+            建物_残存価額=建物_残存価額,
+            付属設備_取得価額=付属設備_取得価額,
+            付属設備_耐用年数=付属設備_耐用年数,
+            付属設備_償却方法=付属設備_償却方法,
+            付属設備_残存価額=付属設備_残存価額,
+            構築物_取得価額=構築物_取得価額,
+            構築物_耐用年数=構築物_耐用年数,
+            構築物_償却方法=構築物_償却方法,
+            構築物_残存価額=構築物_残存価額
         )
         
         db.add(simulation)
