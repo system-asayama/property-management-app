@@ -152,7 +152,7 @@
   </div>
   
   <div class="store-actions" style="border-top:none; padding-top:8px">
-    <a class="btn small" href="{{ url_for('system_admin.tenant_apps', tid=tenant.id) }}">利用可能アプリ一覧</a>
+    <a class="btn small" href="{{ url_for('system_admin.store_apps', tid=tenant.id, sid=store.id) }}">利用可能アプリ一覧</a>
     <a class="btn small sub" href="{{ url_for('system_admin.tenant_stores', tid=tenant.id) }}">戻る</a>
   </div>
 </div>

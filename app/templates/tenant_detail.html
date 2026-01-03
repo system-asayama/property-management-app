@@ -71,7 +71,10 @@
   }
 </style>
 
-<h1>テナント詳細情報</h1>
+<div style="margin-bottom:20px">
+  <div style="font-size:1.2em;font-weight:bold;color:#666">{{ tenant['name'] if tenant else 'テナント名' }}</div>
+  <h1 style="margin-top:12px">テナント詳細情報</h1>
+</div>
 
 <div class="tenant-card">
   <div class="tenant-info-row">
@@ -112,6 +115,17 @@
   <div class="tenant-info-row">
     <span class="tenant-info-label">OpenAI APIキー:</span>
     <span class="tenant-info-value">{{ ('*' * 20 + tenant['openai_api_key'][-8:]) if tenant['openai_api_key'] else '未設定' }}</span>
+  </div>
+  
+  <div class="tenant-info-row">
+    <span class="tenant-info-label">有効:</span>
+    <span class="tenant-info-value">
+      {% if tenant.active == 1 %}
+      <span style="color:#16a34a;font-weight:bold">✓ 有効</span>
+      {% else %}
+      <span style="color:#dc2626;font-weight:bold">× 無効</span>
+      {% endif %}
+    </span>
   </div>
   
   <div class="tenant-info-row">

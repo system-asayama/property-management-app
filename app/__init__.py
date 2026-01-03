@@ -128,7 +128,7 @@ def create_app() -> Flask:
 
     # データベース初期化
     try:
-        from .utils import get_db
+        from .utils.db import get_db
         conn = get_db()
         try:
             conn.close()

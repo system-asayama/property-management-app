@@ -92,6 +92,40 @@ def run_migrations():
             conn.rollback()
             raise
         
+        # マイグレーション3: T_テナント管理者_テナントテーブルにcan_manage_tenant_adminsカラムを追加
+        print("\n[マイグレーション] T_テナント管理者_テナントテーブルにcan_manage_tenant_adminsカラムを追加...")
+        
+        try:
+            if _is_pg(conn):
+                # PostgreSQL: カラムが存在するか確認
+                cur.execute("""
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_name = 'T_テナント管理者_テナント' AND column_name = 'can_manage_tenant_admins'
+                """)
+                if not cur.fetchone():
+                    print("  - can_manage_tenant_adminsカラムが存在しません。追加します...")
+                    cur.execute('ALTER TABLE "T_テナント管理者_テナント" ADD COLUMN can_manage_tenant_admins INTEGER DEFAULT 0')
+                    conn.commit()
+                    print("  ✅ T_テナント管理者_テナントテーブルにcan_manage_tenant_adminsカラムを追加しました")
+                else:
+                    print("  ℹ️  can_manage_tenant_adminsカラムは既に存在します（スキップ）")
+            else:
+                # SQLite: PRAGMAでカラムを確認
+                cur.execute('PRAGMA table_info("T_テナント管理者_テナント")')
+                columns = [row[1] for row in cur.fetchall()]
+                if 'can_manage_tenant_admins' not in columns:
+                    print("  - can_manage_tenant_adminsカラムが存在しません。追加します...")
+                    cur.execute('ALTER TABLE "T_テナント管理者_テナント" ADD COLUMN can_manage_tenant_admins INTEGER DEFAULT 0')
+                    conn.commit()
+                    print("  ✅ T_テナント管理者_テナントテーブルにcan_manage_tenant_adminsカラムを追加しました")
+                else:
+                    print("  ℹ️  can_manage_tenant_adminsカラムは既に存在します（スキップ）")
+        except Exception as e:
+            print(f"  ⚠️  マイグレーションエラー: {e}")
+            conn.rollback()
+            raise
+        
         conn.close()
         
         print("\n" + "=" * 60)

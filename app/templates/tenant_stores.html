@@ -122,12 +122,22 @@
   }
 </style>
 
-<h1>店舗一覧</h1>
+<div style="margin-bottom:20px">
+  <div style="font-size:1.2em;font-weight:bold;color:#666">{{ tenant.名称 if tenant else 'テナント名' }}</div>
+  <h1 style="margin-top:12px">店舗一覧</h1>
+</div>
 
 <div style="margin-bottom:20px">
   <a class="btn" href="{{ url_for('tenant_admin.store_new') }}">新規作成</a>
   <a class="btn sub" href="{{ url_for('tenant_admin.dashboard') }}">戻る</a>
 </div>
+
+{% if stores %}
+<div style="margin-bottom:20px">
+  <input type="text" id="searchInput" placeholder="店舗名またはSlugで検索..." 
+         style="width:100%;max-width:500px;padding:12px;border:1px solid #ddd;border-radius:4px;font-size:16px">
+</div>
+{% endif %}
 
 {% if stores %}
 <div class="store-table-wrapper">
@@ -206,6 +216,26 @@
 </div>
 
 <script>
+// 検索機能
+const searchInput = document.getElementById('searchInput');
+if (searchInput) {
+  searchInput.addEventListener('input', function(e) {
+    const searchTerm = e.target.value.toLowerCase();
+    const rows = document.querySelectorAll('.store-table tbody tr');
+    
+    rows.forEach(function(row) {
+      const storeName = row.querySelector('.store-name').textContent.toLowerCase();
+      const storeSlug = row.querySelector('.store-slug').textContent.toLowerCase();
+      
+      if (storeName.includes(searchTerm) || storeSlug.includes(searchTerm)) {
+        row.style.display = '';
+      } else {
+        row.style.display = 'none';
+      }
+    });
+  });
+}
+
 function showDeleteModal(storeId, storeName) {
   document.getElementById('storeName').textContent = storeName;
   document.getElementById('deleteForm').action = '/tenant_admin/stores/' + storeId + '/delete';

@@ -105,6 +105,24 @@
     .admin-table td.admin-actions form {
       display: inline-block;
     }
+    
+    .admin-table td[data-label="所属テナント: "] {
+      position: relative;
+    }
+    
+    .admin-table td[data-label="所属テナント: "]::before {
+      display: inline-block;
+      position: absolute;
+      left: 0;
+    }
+    
+    .admin-table td[data-label="所属テナント: "] span {
+      margin-left: 100px;
+    }
+    
+    .admin-table td[data-label="所属テナント: "] span:first-child {
+      display: inline !important;
+    }
   }
 </style>
 
@@ -134,10 +152,12 @@
         <th>ID</th>
         <th>ログインID</th>
         <th>氏名</th>
-        <th>オーナー</th>
+        <th>メールアドレス</th>
+        <th>所属テナント</th>
         <th>管理権限</th>
         <th>有効</th>
         <th>作成日時</th>
+        <th>更新日時</th>
         <th>操作</th>
       </tr>
     </thead>
@@ -147,16 +167,24 @@
         <td data-label="ID: ">{{ a.id }}</td>
         <td data-label="ログインID: "><code>{{ a.login_id }}</code></td>
         <td data-label="氏名: "><strong>{{ a.name }}</strong></td>
-        <td data-label="オーナー: ">
-          {% if a.is_owner == 1 %}
-            <span style="color:#ff6f00;font-weight:bold">★ オーナー</span>
+        <td data-label="メールアドレス: ">{{ a.email if a.email else '-' }}</td>
+        <td data-label="所属テナント: ">
+          {% if a.tenants %}
+            {% for tenant in a.tenants %}
+              <span style="display:block">
+                {{ tenant.name }}
+                {% if tenant.is_owner %}
+                  <span style="color:#ff9800;font-weight:bold;margin-left:4px">★ オーナー</span>
+                {% endif %}
+              </span>
+            {% endfor %}
           {% else %}
             <span style="color:#999">-</span>
           {% endif %}
         </td>
         <td data-label="管理権限: ">
           {% if a.is_owner == 1 %}
-            <span style="color:#999">（常に有）</span>
+            <span style="color:green;font-weight:bold">✓ 有（常に有）</span>
           {% elif a.can_manage_admins == 1 %}
             <span style="color:green;font-weight:bold">✓ 有</span>
           {% else %}
@@ -164,13 +192,16 @@
           {% endif %}
         </td>
         <td data-label="有効: ">
-          {% if a.active == 1 %}
+          {% if a.is_owner == 1 %}
+            <span style="color:#4caf50;font-weight:bold">✓ 有効（常に有効）</span>
+          {% elif a.active == 1 %}
             <span style="color:#4caf50;font-weight:bold">✓ 有効</span>
           {% else %}
             <span style="color:#999">無効</span>
           {% endif %}
         </td>
         <td data-label="作成日時: " style="color:#666">{{ a.created_at.strftime('%Y-%m-%d %H:%M:%S') if a.created_at else '-' }}</td>
+        <td data-label="更新日時: " style="color:#666">{{ a.updated_at.strftime('%Y-%m-%d %H:%M:%S') if a.updated_at else '-' }}</td>
         <td class="admin-actions">
           <a class="btn small" href="{{ url_for('system_admin.tenant_admin_edit', tid=tenant.id, admin_id=a.id) }}">編集</a>
           

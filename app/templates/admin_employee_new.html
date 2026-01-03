@@ -1,7 +1,17 @@
 {% extends "base.html" %}
 {% block title %}従業員新規作成{% endblock %}
 {% block content %}
+{% if tenant %}
+<div style="margin-bottom:20px">
+  <div style="font-size:1.2em;font-weight:bold;color:#666">{{ tenant.名称 }}</div>
+  {% if store %}
+  <div style="font-size:1.1em;font-weight:bold;color:#888;margin-top:4px">{{ store.名称 }}</div>
+  {% endif %}
+  <h1 style="margin-top:12px">従業員新規作成</h1>
+</div>
+{% else %}
 <h1>従業員新規作成</h1>
+{% endif %}
 
 <form method="post">
   <div class="card" style="max-width:500px">

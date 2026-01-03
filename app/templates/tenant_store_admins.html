@@ -142,7 +142,7 @@
 
 <div style="margin-bottom:20px">
   <a class="btn" href="{{ url_for('tenant_admin.store_admin_new') }}">新規作成</a>
-  <a class="btn" href="{{ url_for('tenant_admin.store_admin_invite') }}">管理者を追加</a>
+  <a class="btn" href="{{ url_for('tenant_admin.store_admin_invite') }}">管理者を招待</a>
   <a class="btn sub" href="{{ url_for('tenant_admin.dashboard') }}">戻る</a>
 </div>
 
@@ -161,10 +161,12 @@
         <th>ID</th>
         <th>ログインID</th>
         <th>氏名</th>
+        <th>メールアドレス</th>
         <th>所属店舗</th>
         <th>管理権限</th>
         <th>有効</th>
         <th>作成日時</th>
+        <th>更新日時</th>
         <th>操作</th>
       </tr>
     </thead>
@@ -177,6 +179,7 @@
         <td data-label="ID: ">{{ a.id }}</td>
         <td data-label="ログインID: "><code>{{ a.login_id }}</code></td>
         <td data-label="氏名: "><strong>{{ a.name }}</strong></td>
+        <td data-label="メールアドレス: ">{{ a.email if a.email else '-' }}</td>
         <td data-label="所属店舗: ">
           {% if a.stores %}
             {% for store in a.stores %}
@@ -193,7 +196,7 @@
         </td>
         <td data-label="管理権限: ">
           {% if a.is_owner == 1 %}
-            <span style="color:#999">（常に有）</span>
+            <span style="color:green;font-weight:bold">✓ 有（常に有）</span>
           {% elif a.can_manage_admins == 1 %}
             <span style="color:green;font-weight:bold">✓ 有</span>
           {% else %}
@@ -201,13 +204,16 @@
           {% endif %}
         </td>
         <td data-label="有効: ">
-          {% if a.active == 1 %}
+          {% if a.is_owner == 1 %}
+            <span style="color:#4caf50;font-weight:bold">✓ 有効（常に有効）</span>
+          {% elif a.active == 1 %}
             <span style="color:#4caf50;font-weight:bold">✓ 有効</span>
           {% else %}
             <span style="color:#999">無効</span>
           {% endif %}
         </td>
         <td data-label="作成日時: " style="color:#666">{{ a.created_at }}</td>
+        <td data-label="更新日時: " style="color:#666">{{ a.updated_at if a.updated_at else '-' }}</td>
         <td class="admin-actions">
           {% if a.id == current_user_id %}
             <span style="color:#999">（自分）</span>

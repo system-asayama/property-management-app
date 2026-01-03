@@ -1,7 +1,10 @@
 {% extends "base.html" %}
 {% block title %}テナント管理者ダッシュボード{% endblock %}
 {% block content %}
-<h1>テナント管理者ダッシュボード</h1>
+<div style="margin-bottom:20px">
+  <div style="font-size:1.2em;font-weight:bold;color:#666">{{ tenant_name if tenant_name else 'テナント名' }}</div>
+  <h1 style="margin-top:12px">テナント管理者ダッシュボード</h1>
+</div>
 
 <div class="card">
   <h2>ようこそ、{{ session.user_name }}さん</h2>

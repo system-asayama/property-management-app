@@ -128,6 +128,7 @@ class TTenantAdminTenant(Base):
     admin_id = Column(Integer, ForeignKey('T_管理者.id'), nullable=False)
     tenant_id = Column(Integer, ForeignKey('T_テナント.id'), nullable=False)
     is_owner = Column(Integer, default=0, comment='このテナントのオーナーかどうか')
+    can_manage_tenant_admins = Column(Integer, default=0, comment='テナント管理者を管理する権限')
     created_at = Column(DateTime, server_default=func.now())
     
     # ユニーク制約: 同じ管理者が同じテナントに複数回紐付けられないようにする

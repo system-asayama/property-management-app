@@ -43,37 +43,35 @@
     </div>
 
     <div style="margin-top:24px;padding:16px;background:#f9f9f9;border-radius:8px">
-      <label style="display:flex;align-items:center;cursor:pointer;margin:0">
+      <label style="display:flex;align-items:center;cursor:{% if admin.is_owner == 1 %}not-allowed{% else %}pointer{% endif %};margin:0">
         <input name="active" type="checkbox" value="1" 
-               {% if admin.active == 1 %}checked{% endif %}
+               {% if admin.active == 1 or admin.is_owner == 1 %}checked{% endif %}
+               {% if admin.is_owner == 1 %}disabled{% endif %}
                style="width:auto;margin-right:8px">
         <span style="font-weight:normal">有効</span>
       </label>
-      <div class="small" style="color:#666;margin-top:4px;margin-left:28px">
-        チェックを外すとこのシステム管理者は無効化されます。
-      </div>
+      {% if admin.is_owner == 1 %}
+        <div class="small" style="color:#666;margin-top:4px">
+          ※ オーナーは常に有効です
+        </div>
+        <input name="active" type="hidden" value="1">
+      {% endif %}
     </div>
 
-    {% if admin.is_owner != 1 %}
     <div style="margin-top:16px;padding:16px;background:#f9f9f9;border-radius:8px">
-      <label style="display:flex;align-items:center;cursor:pointer;margin:0">
+      <label style="display:flex;align-items:center;cursor:{% if admin.is_owner == 1 %}not-allowed{% else %}pointer{% endif %};margin:0">
         <input name="can_manage_admins" type="checkbox" value="1" 
-               {% if admin.can_manage_admins == 1 %}checked{% endif %}
+               {% if admin.can_manage_admins == 1 or admin.is_owner == 1 %}checked{% endif %}
+               {% if admin.is_owner == 1 %}disabled{% endif %}
                style="width:auto;margin-right:8px">
         <span style="font-weight:normal">管理者管理権限</span>
       </label>
-      <div class="small" style="color:#666;margin-top:4px;margin-left:28px">
-        チェックを入れるとこのシステム管理者は他のシステム管理者を管理できるようになります。
-      </div>
+      {% if admin.is_owner == 1 %}
+        <div class="small" style="color:#666;margin-top:4px">
+          ※ オーナーは常に管理者管理権限を持ちます
+        </div>
+      {% endif %}
     </div>
-    {% else %}
-    <div style="margin-top:16px;padding:16px;background:#fffbf0;border:1px solid #ff6f00;border-radius:8px">
-      <div style="color:#ff6f00;font-weight:bold">★ オーナー</div>
-      <div class="small" style="color:#666;margin-top:4px">
-        オーナーは常に管理者管理権限を持ちます。
-      </div>
-    </div>
-    {% endif %}
 
     <div style="margin-top:24px;display:flex;gap:8px">
       <button class="btn" type="submit">更新する</button>

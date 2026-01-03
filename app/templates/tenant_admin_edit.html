@@ -1,6 +1,12 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>管理者編集</h2>
+<div style="margin-bottom:20px">
+  <div style="font-size:1.2em;font-weight:bold;color:#666">{{ tenant.名称 if tenant else 'テナント名' }}</div>
+  {% if store %}
+  <div style="font-size:1.1em;font-weight:bold;color:#888;margin-top:4px">{{ store.名称 }}</div>
+  {% endif %}
+  <h2 style="margin-top:12px">店舗管理者編集</h2>
+</div>
 
 <form method="post">
   {% if get_csrf %}<input type="hidden" name="csrf_token" value="{{ get_csrf() }}">{% endif %}
@@ -82,7 +88,7 @@
     </label>
     <input type="hidden" name="active" value="1">
     <div class="small" style="color:#666;margin-top:4px;margin-left:28px">
-      ※ オーナーは無効にできません
+      ※ オーナーは常に有効です
     </div>
     {% else %}
     <label style="display:flex;align-items:center;cursor:pointer;margin:0">

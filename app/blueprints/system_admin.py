@@ -591,13 +591,32 @@ def tenant_admins(tid):
                 and_(TKanrisha.id == rel.admin_id, TKanrisha.role == ROLES["TENANT_ADMIN"])
             ).first()
             if a:
+                # 所属テナント情報を取得
+                tenant_relations = db.query(TTenantAdminTenant).filter(
+                    TTenantAdminTenant.admin_id == a.id
+                ).all()
+                
+                tenants = []
+                for tenant_rel in tenant_relations:
+                    tenant_info = db.query(TTenant).filter(TTenant.id == tenant_rel.tenant_id).first()
+                    if tenant_info:
+                        tenants.append({
+                            'id': tenant_info.id,
+                            'name': tenant_info.名称,
+                            'is_owner': tenant_rel.is_owner
+                        })
+                
                 admins.append({
                     'id': a.id,
                     'login_id': a.login_id,
                     'name': a.name,
+                    'email': a.email,
                     'active': a.active,
                     'is_owner': rel.is_owner,  # 中間テーブルのis_ownerを使用
-                    'can_manage_admins': a.can_manage_admins
+                    'can_manage_admins': a.can_manage_admins,
+                    'tenants': tenants,
+                    'created_at': a.created_at,
+                    'updated_at': a.updated_at
                 })
         
         return render_template('sys_tenant_admins.html', tenant=tenant, admins=admins)
@@ -1222,6 +1241,7 @@ def system_admins():
                 'name': a.name,
                 'active': a.active,
                 'created_at': a.created_at,
+                'updated_at': a.updated_at,
                 'is_owner': a.is_owner,
                 'can_manage_admins': a.can_manage_admins
             })
@@ -1917,5 +1937,64 @@ def restore_owner_temp(admin_id):
         db.rollback()
         flash(f'エラー: {str(e)}', 'error')
         return redirect(url_for('system_admin.system_admins'))
+    finally:
+        db.close()
+
+
+@bp.route('/tenants/<int:tid>/stores/<int:sid>/apps')
+@require_roles(ROLES["SYSTEM_ADMIN"])
+def store_apps(tid, sid):
+    """店舗の利用可能アプリ一覧"""
+    db = SessionLocal()
+    
+    try:
+        # テナント情報を取得
+        tenant = db.query(TTenant).filter(TTenant.id == tid).first()
+        
+        if not tenant:
+            flash('テナント情報が見つかりません', 'error')
+            return redirect(url_for('system_admin.tenants'))
+        
+        tenant_data = {
+            'id': tenant.id,
+            '名称': tenant.名称,
+            'slug': tenant.slug,
+            'created_at': tenant.created_at
+        }
+        
+        # 店舗情報を取得
+        store = db.query(TTenpo).filter(
+            and_(TTenpo.id == sid, TTenpo.tenant_id == tid)
+        ).first()
+        
+        if not store:
+            flash('店舗情報が見つかりません', 'error')
+            return redirect(url_for('system_admin.tenant_stores', tid=tid))
+        
+        store_data = {
+            'id': store.id,
+            '名称': store.名称,
+            'slug': store.slug
+        }
+        
+        # 店舗レベルで有効なアプリを取得
+        enabled_apps = []
+        
+        for app in AVAILABLE_APPS:
+            if app['scope'] == 'store':
+                app_setting = db.query(TTenpoAppSetting).filter(
+                    and_(
+                        TTenpoAppSetting.store_id == sid,
+                        TTenpoAppSetting.app_name == app['name']
+                    )
+                ).first()
+                enabled = app_setting.enabled if app_setting else 1
+                
+                if enabled:
+                    enabled_apps.append(app)
+        
+        apps = enabled_apps
+        
+        return render_template('sys_store_apps.html', tenant=tenant_data, store=store_data, apps=apps, tid=tid, sid=sid)
     finally:
         db.close()

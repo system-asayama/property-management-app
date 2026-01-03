@@ -133,7 +133,7 @@
 
 <div style="margin-bottom:20px">
   <a class="btn" href="{{ url_for('tenant_admin.employee_new') }}">新規作成</a>
-  <a class="btn" href="{{ url_for('tenant_admin.employee_invite') }}">従業員を追加</a>
+  <a class="btn" href="{{ url_for('tenant_admin.employee_invite') }}">従業員を招待</a>
   <a class="btn sub" href="{{ url_for('tenant_admin.dashboard') }}">戻る</a>
 </div>
 
@@ -152,9 +152,11 @@
         <th>ID</th>
         <th>ログインID</th>
         <th>氏名</th>
+        <th>メールアドレス</th>
         <th>所属店舗</th>
         <th>有効</th>
         <th>作成日時</th>
+        <th>更新日時</th>
         <th>操作</th>
       </tr>
     </thead>
@@ -166,6 +168,7 @@
         <td data-label="ID: ">{{ e.id }}</td>
         <td data-label="ログインID: "><code>{{ e.login_id }}</code></td>
         <td data-label="氏名: "><strong>{{ e.name }}</strong></td>
+        <td data-label="メールアドレス: ">{{ e.email if e.email else '-' }}</td>
         <td data-label="所属店舗: " style="color:#666">
           {% if e.stores %}
             {% for store in e.stores %}
@@ -183,6 +186,7 @@
           {% endif %}
         </td>
         <td data-label="作成日時: " style="color:#666">{{ e.created_at }}</td>
+        <td data-label="更新日時: " style="color:#666">{{ e.updated_at if e.updated_at else '-' }}</td>
         <td class="employee-actions">
           <a class="btn small" href="{{ url_for('tenant_admin.employee_edit', employee_id=e.id) }}">編集</a>
           <form method="post" action="{{ url_for('tenant_admin.employee_delete', employee_id=e.id) }}" style="display:inline" onsubmit="return confirm('本当に削除しますか？')">

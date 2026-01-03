@@ -1,6 +1,17 @@
 {% extends "base.html" %}
 {% block title %}店舗情報{% endblock %}
 {% block content %}
+{% if tenant %}
+<div style="margin-bottom:20px">
+  <div style="font-size:1.2em;font-weight:bold;color:#666">{{ tenant.名称 }}</div>
+  {% if store_obj %}
+  <div style="font-size:1.1em;font-weight:bold;color:#888;margin-top:4px">{{ store_obj.名称 }}</div>
+  {% endif %}
+  <h1 style="margin-top:12px">店舗情報</h1>
+</div>
+{% else %}
+<h1>店舗情報</h1>
+{% endif %}
 <style>
   .store-card {
     background: #f9fafb;
@@ -69,8 +80,6 @@
   }
 </style>
 
-<h1>店舗情報</h1>
-
 <div class="store-card">
   <div class="store-info-row">
     <span class="store-info-label">店舗ID:</span>
@@ -87,6 +96,17 @@
   <div class="store-info-row">
     <span class="store-info-label">Slug:</span>
     <span class="store-info-value store-slug"><code>{{ store.slug }}</code></span>
+  </div>
+  
+  <div class="store-info-row">
+    <span class="store-info-label">有効:</span>
+    <span class="store-info-value">
+      {% if store['有効'] == 1 %}
+        <span style="color:green">✓ 有効</span>
+      {% else %}
+        <span style="color:red">× 無効</span>
+      {% endif %}
+    </span>
   </div>
   
   {% if store['郵便番号'] %}
@@ -129,12 +149,10 @@
     <span class="store-info-value store-date">{{ store.created_at }}</span>
   </div>
   
-  {% if store.updated_at %}
   <div class="store-info-row">
     <span class="store-info-label">更新日時:</span>
-    <span class="store-info-value store-date">{{ store.updated_at }}</span>
+    <span class="store-info-value store-date">{{ store.updated_at if store.updated_at else store.created_at }}</span>
   </div>
-  {% endif %}
   
   <div class="store-actions">
     <a class="btn small" href="{{ url_for('admin.store_detail', store_id=store.id) }}">詳細</a>

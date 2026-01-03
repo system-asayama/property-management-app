@@ -123,11 +123,13 @@
   }
 </style>
 
-<h1>テナントアプリ管理</h1>
+<div style="margin-bottom:20px">
+  <div style="font-size:1.2em;font-weight:bold;color:#666">{{ tenant['名称'] if tenant else 'テナント名' }}</div>
+  <h1 style="margin-top:12px">利用可能アプリ一覧</h1>
+</div>
 
 <div class="card">
-  <h2>{{ tenant['名称'] }}</h2>
-  <p class="small" style="color:#666;margin-top:8px">
+  <p class="small" style="color:#666">
     テナントID: {{ tenant.id }} / Slug: {{ tenant.slug }}
   </p>
 </div>

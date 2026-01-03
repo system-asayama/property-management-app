@@ -1,6 +1,9 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>テナント情報の編集</h2>
+<div style="margin-bottom:20px">
+  <div style="font-size:1.2em;font-weight:bold;color:#666">{{ tenant['name'] if tenant else 'テナント名' }}</div>
+  <h2 style="margin-top:12px">テナント情報の編集</h2>
+</div>
 <p class="small" style="color:#666">テナントの基本情報を編集します。</p>
 
 <form method="post" action="">
@@ -44,6 +47,14 @@
       <label>OpenAI APIキー</label>
       <input type="text" name="openai_api_key" value="{{ tenant['openai_api_key'] if tenant else '' }}" placeholder="sk-...">
       <p class="small" style="color:#666">テナント内の全店舗で使用されるOpenAI APIキーを設定します</p>
+    </div>
+
+    <div class="row">
+      <label>有効/無効</label>
+      <select name="active" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:1em">
+        <option value="1" {% if tenant and tenant['active'] == 1 %}selected{% endif %}>有効</option>
+        <option value="0" {% if tenant and tenant['active'] == 0 %}selected{% endif %}>無効</option>
+      </select>
     </div>
 
     <div class="actions" style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap;">

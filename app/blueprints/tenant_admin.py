@@ -45,14 +45,23 @@ def can_manage_tenant_admins():
 def dashboard():
     """テナント管理者ダッシュボード"""
     tenant_id = session.get('tenant_id')
+    db = SessionLocal()
     
-    # AVAILABLE_APPSからテナントレベルのアプリをフィルタリング
-    from ..blueprints.tenant_admin import AVAILABLE_APPS
-    tenant_apps = [app for app in AVAILABLE_APPS if app.get('scope') == 'tenant']
-    
-    return render_template('tenant_admin_dashboard.html', 
-                         tenant_id=tenant_id,
-                         tenant_apps=tenant_apps)
+    try:
+        # テナント情報を取得
+        tenant = db.query(TTenant).filter(TTenant.id == tenant_id).first()
+        tenant_name = tenant.名称 if tenant else None
+        
+        # AVAILABLE_APPSからテナントレベルのアプリをフィルタリング
+        from ..blueprints.tenant_admin import AVAILABLE_APPS
+        tenant_apps = [app for app in AVAILABLE_APPS if app.get('scope') == 'tenant']
+        
+        return render_template('tenant_admin_dashboard.html', 
+                             tenant_id=tenant_id,
+                             tenant_name=tenant_name,
+                             tenant_apps=tenant_apps)
+    finally:
+        db.close()
 
 
 @bp.route('/mypage', methods=['GET', 'POST'])
@@ -106,7 +115,7 @@ def mypage():
             store_objs = db.query(TTenpo).filter(
                 TTenpo.tenant_id.in_(tenant_ids)
             ).order_by(TTenpo.名称).all()
-            store_list = [{'id': s.id, 'name': s.名称} for s in store_objs]
+            store_list = [{'id': s.id, 'name': s.名称, 'tenant_id': s.tenant_id} for s in store_objs]
         
         # POSTリクエスト（プロフィール編集またはパスワード変更）
         if request.method == 'POST':
@@ -198,6 +207,7 @@ def tenant_info():
             'id': tenant_obj.id,
             'name': tenant_obj.名称,
             'slug': tenant_obj.slug,
+            'active': tenant_obj.有効,
             'created_at': tenant_obj.created_at,
             'updated_at': tenant_obj.updated_at if hasattr(tenant_obj, 'updated_at') else None
         }
@@ -233,6 +243,7 @@ def tenant_detail():
             'phone': tenant_obj.電話番号 or '',
             'email': tenant_obj.email or '',
             'openai_api_key': tenant_obj.openai_api_key or '',
+            'active': tenant_obj.有効,
             'created_at': tenant_obj.created_at,
             'updated_at': tenant_obj.updated_at if hasattr(tenant_obj, 'updated_at') else None
         }
@@ -306,6 +317,7 @@ def me_edit():
             phone = request.form.get('phone', '').strip()
             email = request.form.get('email', '').strip()
             openai_api_key = request.form.get('openai_api_key', '').strip()
+            active = int(request.form.get('active', '1'))
             
             if not name or not slug:
                 flash('名称とslugは必須です', 'error')
@@ -326,6 +338,7 @@ def me_edit():
                         tenant_obj.電話番号 = phone if phone else None
                         tenant_obj.email = email if email else None
                         tenant_obj.openai_api_key = openai_api_key if openai_api_key else None
+                        tenant_obj.有効 = active
                         db.commit()
                         flash('テナント情報を更新しました', 'success')
                         return redirect(url_for('tenant_admin.tenant_info'))
@@ -345,6 +358,7 @@ def me_edit():
             'phone': tenant_obj.電話番号 or '',
             'email': tenant_obj.email or '',
             'openai_api_key': tenant_obj.openai_api_key or '',
+            'active': tenant_obj.有効,
             'created_at': tenant_obj.created_at
         }
         return render_template('tenant_me_edit.html', tenant=tenant)
@@ -412,7 +426,10 @@ def stores():
                 'updated_at': s.updated_at
             })
         
-        return render_template('tenant_stores.html', stores=stores_list)
+        # テナント情報を取得
+        tenant = db.query(TTenant).filter(TTenant.id == tenant_id).first()
+        
+        return render_template('tenant_stores.html', stores=stores_list, tenant=tenant)
     finally:
         db.close()
 
@@ -518,10 +535,14 @@ def store_detail(store_id):
             TJugyoinTenpo.store_id == store_id
         ).scalar()
         
+        # テナント情報を取得
+        tenant = db.query(TTenant).filter(TTenant.id == tenant_id).first()
+        
         return render_template('tenant_store_detail.html',
                              store=store,
                              admin_count=admin_count,
-                             employee_count=employee_count)
+                             employee_count=employee_count,
+                             tenant=tenant)
     finally:
         db.close()
 
@@ -583,6 +604,9 @@ def store_edit(store_id):
             flash('店舗が見つかりません', 'error')
             return redirect(url_for('tenant_admin.stores'))
         
+        # テナント情報を取得
+        tenant = db.query(TTenant).filter(TTenant.id == tenant_id).first()
+        
         store = {
             'id': store_obj.id,
             '名称': store_obj.名称,
@@ -596,7 +620,7 @@ def store_edit(store_id):
             'active': store_obj.有効
         }
         
-        return render_template('tenant_store_edit.html', store=store)
+        return render_template('tenant_store_edit.html', tenant=tenant, store=store)
     finally:
         db.close()
 
@@ -688,20 +712,65 @@ def tenant_admins():
             ).first()
             
             if admin:
+                # 所属テナント情報を取得
+                tenant_relations = db.query(TTenantAdminTenant).filter(
+                    TTenantAdminTenant.admin_id == admin.id
+                ).all()
+                
+                tenants = []
+                for tenant_rel in tenant_relations:
+                    tenant_info = db.query(TTenant).filter(TTenant.id == tenant_rel.tenant_id).first()
+                    if tenant_info:
+                        tenants.append({
+                            'id': tenant_info.id,
+                            'name': tenant_info.名称,
+                            'is_owner': tenant_rel.is_owner
+                        })
+                
                 admins_data.append({
                     'id': admin.id,
                     'login_id': admin.login_id,
                     'name': admin.name,
                     'email': admin.email,
                     'active': admin.active,
-                    'can_manage_admins': admin.can_manage_admins,
-                    'is_owner': rel.is_owner
+                    'can_manage_admins': rel.can_manage_tenant_admins,
+                    'is_owner': rel.is_owner,
+                    'tenants': tenants,
+                    'created_at': admin.created_at,
+                    'updated_at': admin.updated_at
                 })
         
         # IDでソート
         admins_data.sort(key=lambda x: x['id'])
         
-        return render_template('tenant_admins.html', admins=admins_data)
+        # テナント情報を取得
+        tenant = db.query(TTenant).filter(TTenant.id == tenant_id).first()
+        
+        # 現在のユーザーの権限を取得
+        admin_id = session.get('user_id')
+        current_user = db.query(TKanrisha).filter(TKanrisha.id == admin_id).first()
+        is_system_admin = current_user and current_user.role == ROLES["SYSTEM_ADMIN"]
+        
+        # システム管理者は全権限を持つ
+        if is_system_admin:
+            is_owner = True
+            can_manage_tenant_admins = True
+        else:
+            current_admin_relation = db.query(TTenantAdminTenant).filter(
+                and_(
+                    TTenantAdminTenant.admin_id == admin_id,
+                    TTenantAdminTenant.tenant_id == tenant_id
+                )
+            ).first()
+            
+            is_owner = current_admin_relation.is_owner == 1 if current_admin_relation else False
+            can_manage_tenant_admins = current_admin_relation.can_manage_tenant_admins == 1 if current_admin_relation else False
+        
+        return render_template('tenant_tenant_admins.html', 
+                             tenant_admins=admins_data, 
+                             tenant=tenant,
+                             is_owner=is_owner,
+                             can_manage_tenant_admins=can_manage_tenant_admins)
     finally:
         db.close()
 
@@ -711,59 +780,83 @@ def tenant_admins():
 def tenant_admin_new():
     """テナント管理者新規作成"""
     tenant_id = session.get('tenant_id')
+    admin_id = session.get('user_id')
+    
+    if not tenant_id:
+        flash('テナントIDが取得できません', 'error')
+        return redirect(url_for('tenant_admin.dashboard'))
+    
     db = SessionLocal()
     
     try:
+        # 現在のユーザーのロールを確認
+        current_user = db.query(TKanrisha).filter(TKanrisha.id == admin_id).first()
+        is_system_admin = current_user and current_user.role == ROLES["SYSTEM_ADMIN"]
+        
+        # システム管理者以外は権限チェック
+        if not is_system_admin:
+            # 権限チェック: オーナーまたは管理権限がある場合のみ
+            admin_tenant_relation = db.query(TTenantAdminTenant).filter(
+                and_(
+                    TTenantAdminTenant.admin_id == admin_id,
+                    TTenantAdminTenant.tenant_id == tenant_id
+                )
+            ).first()
+            
+            if not admin_tenant_relation:
+                flash('このテナントへのアクセス権限がありません', 'error')
+                return redirect(url_for('tenant_admin.tenant_admins'))
+            
+            is_owner = admin_tenant_relation.is_owner == 1
+            can_manage = admin_tenant_relation.can_manage_tenant_admins == 1
+            
+            if not (is_owner or can_manage):
+                flash('テナント管理者を作成する権限がありません', 'error')
+                return redirect(url_for('tenant_admin.tenant_admins'))
+        
         if request.method == 'POST':
             login_id = request.form.get('login_id', '').strip()
             name = request.form.get('name', '').strip()
             email = request.form.get('email', '').strip()
             password = request.form.get('password', '')
             password_confirm = request.form.get('password_confirm', '')
-            tenant_ids = request.form.getlist('tenant_ids')
             
-            # 作成元のテナントIDを必ず含める
-            if str(tenant_id) not in tenant_ids:
-                tenant_ids.append(str(tenant_id))
+            # システム管理者の場合は複数テナント選択可能
+            if is_system_admin:
+                tenant_ids = request.form.getlist('tenant_ids')
+                # 選択されていない場合は作成元テナントを追加
+                if not tenant_ids:
+                    tenant_ids = [str(tenant_id)]
+            else:
+                # テナント管理者は作成元テナントのみ
+                tenant_ids = [str(tenant_id)]
             
             # バリデーション
             if not login_id or not name or not password:
                 flash('ログインID、氏名、パスワードは必須です', 'error')
-                tenants_list = db.query(TTenant).order_by(TTenant.id).all()
-                return render_template('tenant_tenant_admin_new.html', tenants=tenants_list, from_tenant_id=tenant_id)
-            
-            if not tenant_ids:
-                flash('少なくとも1つのテナントを選択してください', 'error')
-                tenants_list = db.query(TTenant).order_by(TTenant.id).all()
-                return render_template('tenant_tenant_admin_new.html', tenants=tenants_list, from_tenant_id=tenant_id)
+                tenant = db.query(TTenant).filter(TTenant.id == tenant_id).first()
+                tenants = db.query(TTenant).order_by(TTenant.id).all() if is_system_admin else None
+                return render_template('tenant_tenant_admin_new.html', from_tenant_id=tenant_id, tenant=tenant, tenants=tenants, is_system_admin=is_system_admin)
             
             if password != password_confirm:
                 flash('パスワードが一致しません', 'error')
-                tenants_list = db.query(TTenant).order_by(TTenant.id).all()
-                return render_template('tenant_tenant_admin_new.html', tenants=tenants_list, from_tenant_id=tenant_id)
+                tenant = db.query(TTenant).filter(TTenant.id == tenant_id).first()
+                tenants = db.query(TTenant).order_by(TTenant.id).all() if is_system_admin else None
+                return render_template('tenant_tenant_admin_new.html', from_tenant_id=tenant_id, tenant=tenant, tenants=tenants, is_system_admin=is_system_admin)
             
             if len(password) < 8:
                 flash('パスワードは8文字以上にしてください', 'error')
-                tenants_list = db.query(TTenant).order_by(TTenant.id).all()
-                return render_template('tenant_tenant_admin_new.html', tenants=tenants_list, from_tenant_id=tenant_id)
+                tenant = db.query(TTenant).filter(TTenant.id == tenant_id).first()
+                tenants = db.query(TTenant).order_by(TTenant.id).all() if is_system_admin else None
+                return render_template('tenant_tenant_admin_new.html', from_tenant_id=tenant_id, tenant=tenant, tenants=tenants, is_system_admin=is_system_admin)
             
             # ログインID重複チェック
             existing = db.query(TKanrisha).filter(TKanrisha.login_id == login_id).first()
             if existing:
                 flash(f'ログインID "{login_id}" は既に使用されています', 'error')
-                tenants_list = db.query(TTenant).order_by(TTenant.id).all()
-                return render_template('tenant_tenant_admin_new.html', tenants=tenants_list, from_tenant_id=tenant_id)
-            
-            # このテナントに既存の管理者が存在するかチェック
-            existing_admin_count = db.query(TKanrisha).filter(
-                and_(
-                    TKanrisha.role == ROLES["TENANT_ADMIN"],
-                    TKanrisha.tenant_id == tenant_id
-                )
-            ).count()
-            
-            # 最初の管理者の場合は自動的にオーナーにする
-            is_first_admin = (existing_admin_count == 0)
+                tenant = db.query(TTenant).filter(TTenant.id == tenant_id).first()
+                tenants = db.query(TTenant).order_by(TTenant.id).all() if is_system_admin else None
+                return render_template('tenant_tenant_admin_new.html', from_tenant_id=tenant_id, tenant=tenant, tenants=tenants, is_system_admin=is_system_admin)
             
             # 管理者作成
             hashed_password = generate_password_hash(password)
@@ -775,21 +868,26 @@ def tenant_admin_new():
                 role=ROLES["TENANT_ADMIN"],
                 tenant_id=tenant_id,
                 active=1,
-                is_owner=1 if is_first_admin else 0,
-                can_manage_admins=0
+                is_owner=0,  # is_ownerはTTenantAdminTenantで管理
+                can_manage_admins=0  # 店舗管理者用のフィールド
             )
             db.add(new_admin)
             db.flush()  # IDを取得するため
             
             # 選択されたテナントとの関連を作成
-            for tenant_id_str in tenant_ids:
-                tenant_id_int = int(tenant_id_str)
-                # 作成元のテナントかつ最初の管理者の場合はオーナーにする
-                is_owner_for_this_tenant = (tenant_id_int == tenant_id and is_first_admin)
+            for tid_str in tenant_ids:
+                tid = int(tid_str)
+                # 各テナントの最初の管理者かチェック
+                existing_count = db.query(TTenantAdminTenant).filter(
+                    TTenantAdminTenant.tenant_id == tid
+                ).count()
+                is_first_for_tenant = (existing_count == 0)
+                
                 new_relation = TTenantAdminTenant(
                     admin_id=new_admin.id,
-                    tenant_id=tenant_id_int,
-                    is_owner=1 if is_owner_for_this_tenant else 0
+                    tenant_id=tid,
+                    is_owner=1 if is_first_for_tenant else 0,
+                    can_manage_tenant_admins=0  # デフォルトは権限なし
                 )
                 db.add(new_relation)
             db.commit()
@@ -797,8 +895,11 @@ def tenant_admin_new():
             flash(f'管理者 "{name}" を作成しました', 'success')
             return redirect(url_for('tenant_admin.tenant_admins'))
         
-        tenants = db.query(TTenant).order_by(TTenant.id).all()
-        return render_template('tenant_tenant_admin_new.html', tenants=tenants, from_tenant_id=tenant_id)
+        # テナント情報を取得
+        tenant = db.query(TTenant).filter(TTenant.id == tenant_id).first()
+        # システム管理者の場合は全テナントを取得
+        tenants = db.query(TTenant).order_by(TTenant.id).all() if is_system_admin else None
+        return render_template('tenant_tenant_admin_new.html', from_tenant_id=tenant_id, tenant=tenant, tenants=tenants, is_system_admin=is_system_admin)
     finally:
         db.close()
 
@@ -808,6 +909,7 @@ def tenant_admin_new():
 def tenant_admin_invite():
     """既存のテナント管理者を招待"""
     tenant_id = session.get('tenant_id')
+    admin_id = session.get('user_id')
     
     if not tenant_id:
         flash('テナントIDが取得できません', 'error')
@@ -816,6 +918,31 @@ def tenant_admin_invite():
     db = SessionLocal()
     
     try:
+        # 現在のユーザーのロールを確認
+        current_user = db.query(TKanrisha).filter(TKanrisha.id == admin_id).first()
+        is_system_admin = current_user and current_user.role == ROLES["SYSTEM_ADMIN"]
+        
+        # システム管理者以外は権限チェック
+        if not is_system_admin:
+            # 権限チェック: オーナーまたは管理権限がある場合のみ
+            admin_tenant_relation = db.query(TTenantAdminTenant).filter(
+                and_(
+                    TTenantAdminTenant.admin_id == admin_id,
+                    TTenantAdminTenant.tenant_id == tenant_id
+                )
+            ).first()
+            
+            if not admin_tenant_relation:
+                flash('このテナントへのアクセス権限がありません', 'error')
+                return redirect(url_for('tenant_admin.tenant_admins'))
+            
+            is_owner = admin_tenant_relation.is_owner == 1
+            can_manage = admin_tenant_relation.can_manage_tenant_admins == 1
+            
+            if not (is_owner or can_manage):
+                flash('テナント管理者を招待する権限がありません', 'error')
+                return redirect(url_for('tenant_admin.tenant_admins'))
+        
         # テナント名を取得
         tenant = db.query(TTenant).filter(TTenant.id == tenant_id).first()
         tenant_name = tenant.名称 if tenant else 'テストテナント'
@@ -827,7 +954,7 @@ def tenant_admin_invite():
             # バリデーション
             if not login_id or not name:
                 flash('ログインIDと氏名は必須です', 'error')
-                return render_template('tenant_tenant_admin_invite.html', tenant_name=tenant_name)
+                return render_template('tenant_tenant_admin_invite.html', tenant_name=tenant_name, tenant=tenant)
             
             # ログインIDと氏名が一致するテナント管理者を検索
             existing_admin = db.query(TKanrisha).filter(
@@ -840,7 +967,7 @@ def tenant_admin_invite():
             
             if not existing_admin:
                 flash(f'ログインID「{login_id}」と氏名「{name}」が一致するテナント管理者が見つかりません', 'error')
-                return render_template('tenant_tenant_admin_invite.html', tenant_name=tenant_name)
+                return render_template('tenant_tenant_admin_invite.html', tenant_name=tenant_name, tenant=tenant)
             
             # 既にこのテナントに所属しているかチェック
             already_in_tenant = db.query(TTenantAdminTenant).filter(
@@ -852,12 +979,14 @@ def tenant_admin_invite():
             
             if already_in_tenant:
                 flash(f'「{name}」は既にこのテナントに所属しています', 'error')
-                return render_template('tenant_tenant_admin_invite.html', tenant_name=tenant_name)
+                return render_template('tenant_tenant_admin_invite.html', tenant_name=tenant_name, tenant=tenant)
             
             # テナントに管理者を追加
             new_relation = TTenantAdminTenant(
                 admin_id=existing_admin.id,
-                tenant_id=tenant_id
+                tenant_id=tenant_id,
+                is_owner=0,
+                can_manage_tenant_admins=0
             )
             db.add(new_relation)
             db.commit()
@@ -865,7 +994,7 @@ def tenant_admin_invite():
             flash(f'テナント管理者「{name}」をこのテナントに招待しました', 'success')
             return redirect(url_for('tenant_admin.tenant_admins'))
         
-        return render_template('tenant_tenant_admin_invite.html', tenant_name=tenant_name)
+        return render_template('tenant_tenant_admin_invite.html', tenant_name=tenant_name, tenant=tenant)
     finally:
         db.close()
 
@@ -892,7 +1021,9 @@ def tenant_admin_edit(admin_id):
             email = request.form.get('email', '').strip()
             role = request.form.get('role', 'tenant_admin').strip()
             password = request.form.get('password', '').strip()
+            # チェックボックスの値を取得（チェックされている場合のみ'1'が送信される）
             active = 1 if request.form.get('active') == '1' else 0
+            can_manage_admins = 1 if request.form.get('can_manage_admins') == '1' else 0
             
             # オーナーかどうかを確認
             is_owner = db.query(TTenantAdminTenant).filter(
@@ -913,7 +1044,28 @@ def tenant_admin_edit(admin_id):
             admin.name = name
             admin.email = email
             admin.role = new_role
-            admin.active = active
+            # オーナーでない場合のみactiveを更新
+            if not is_owner:
+                admin.active = active
+            else:
+                # オーナーは常に有効
+                admin.active = 1
+            
+            # TTenantAdminTenantテーブルのcan_manage_tenant_adminsを更新
+            if tenant_id:
+                tenant_admin_relation = db.query(TTenantAdminTenant).filter(
+                    and_(
+                        TTenantAdminTenant.admin_id == admin_id,
+                        TTenantAdminTenant.tenant_id == tenant_id
+                    )
+                ).first()
+                
+                if tenant_admin_relation:
+                    if not is_owner:
+                        tenant_admin_relation.can_manage_tenant_admins = can_manage_admins
+                    else:
+                        # オーナーは常に管理権限あり
+                        tenant_admin_relation.can_manage_tenant_admins = 1
             
             if password:
                 admin.password_hash = generate_password_hash(password)
@@ -998,7 +1150,9 @@ def tenant_admin_edit(admin_id):
             if relation:
                 is_owner_in_current_tenant = (relation.is_owner == 1)
         
-        return render_template('tenant_tenant_admin_edit.html', admin=admin, tenants=tenants, admin_tenant_ids=admin_tenant_ids, owner_tenant_ids=owner_tenant_ids, is_owner_in_current_tenant=is_owner_in_current_tenant)
+        # テナント情報を取得
+        tenant = db.query(TTenant).filter(TTenant.id == tenant_id).first()
+        return render_template('tenant_tenant_admin_edit.html', admin=admin, tenants=tenants, admin_tenant_ids=admin_tenant_ids, owner_tenant_ids=owner_tenant_ids, is_owner_in_current_tenant=is_owner_in_current_tenant, tenant=tenant)
     
     finally:
         db.close()
@@ -1064,10 +1218,31 @@ def tenant_admin_toggle_manage_permission(admin_id):
             and_(TKanrisha.id == admin_id, TKanrisha.role == ROLES["TENANT_ADMIN"])
         ).first()
         
-        if admin:
-            admin.can_manage_admins = 1 if admin.can_manage_admins == 0 else 0
+        if not admin:
+            flash('テナント管理者が見つかりません', 'error')
+            return redirect(url_for('tenant_admin.tenant_admins'))
+        
+        # TTenantAdminTenantテーブルの関連レコードを取得
+        tenant_admin_relation = db.query(TTenantAdminTenant).filter(
+            and_(
+                TTenantAdminTenant.admin_id == admin_id,
+                TTenantAdminTenant.tenant_id == tenant_id
+            )
+        ).first()
+        
+        if tenant_admin_relation:
+            # オーナーの場合は権限を変更できない
+            if tenant_admin_relation.is_owner == 1:
+                flash('オーナーの管理権限は変更できません', 'error')
+                return redirect(url_for('tenant_admin.tenant_admins'))
+            
+            # can_manage_tenant_adminsを切り替え
+            new_value = 1 if tenant_admin_relation.can_manage_tenant_admins == 0 else 0
+            tenant_admin_relation.can_manage_tenant_admins = new_value
             db.commit()
-            flash(f'管理権限を{"付与" if admin.can_manage_admins == 1 else "剥奪"}しました', 'success')
+            flash(f'管理権限を{"付与" if new_value == 1 else "剥奪"}しました', 'success')
+        else:
+            flash('テナント管理者の関連情報が見つかりません', 'error')
         
         return redirect(url_for('tenant_admin.tenant_admins'))
     
@@ -1179,7 +1354,7 @@ def store_admins():
                 )
             ).order_by(TTenpo.名称).all()
             
-            # 所屜店舗の名称とオーナー情報を取得
+            # 所属店舗の名称とオーナー情報を取得
             stores_with_owner = []
             for store, store_rel in store_rels:
                 stores_with_owner.append({
@@ -1196,6 +1371,7 @@ def store_admins():
                 'is_owner': rel.is_owner,
                 'can_manage_admins': rel.can_manage_admins,
                 'created_at': admin.created_at,
+                'updated_at': admin.updated_at,
                 'stores': stores_with_owner
             })
         
@@ -1250,26 +1426,30 @@ def store_admin_new():
         if not login_id or not name or not password:
             flash('ログインID、氏名、パスワードは必須です', 'error')
             tenant = db.query(TTenant).filter(TTenant.id == tenant_id).first()
+            store = db.query(TTenpo).filter(TTenpo.id == store_id).first()
             stores_list = db.query(TTenpo).filter(TTenpo.tenant_id == tenant_id).order_by(TTenpo.id).all()
-            return render_template('tenant_store_admin_new.html', tenant=tenant, stores=stores_list, from_store_id=store_id, back_url=url_for('tenant_admin.store_admins'))
+            return render_template('tenant_store_admin_new.html', tenant=tenant, store=store, stores=stores_list, from_store_id=store_id, back_url=url_for('tenant_admin.store_admins'))
         
         if not store_ids:
             flash('少なくとも1つの店舗を選択してください', 'error')
             tenant = db.query(TTenant).filter(TTenant.id == tenant_id).first()
+            store = db.query(TTenpo).filter(TTenpo.id == store_id).first()
             stores_list = db.query(TTenpo).filter(TTenpo.tenant_id == tenant_id).order_by(TTenpo.id).all()
-            return render_template('tenant_store_admin_new.html', tenant=tenant, stores=stores_list, from_store_id=store_id, back_url=url_for('tenant_admin.store_admins'))
+            return render_template('tenant_store_admin_new.html', tenant=tenant, store=store, stores=stores_list, from_store_id=store_id, back_url=url_for('tenant_admin.store_admins'))
         
         if password != password_confirm:
             flash('パスワードが一致しません', 'error')
             tenant = db.query(TTenant).filter(TTenant.id == tenant_id).first()
+            store = db.query(TTenpo).filter(TTenpo.id == store_id).first()
             stores_list = db.query(TTenpo).filter(TTenpo.tenant_id == tenant_id).order_by(TTenpo.id).all()
-            return render_template('tenant_store_admin_new.html', tenant=tenant, stores=stores_list, from_store_id=store_id, back_url=url_for('tenant_admin.store_admins'))
+            return render_template('tenant_store_admin_new.html', tenant=tenant, store=store, stores=stores_list, from_store_id=store_id, back_url=url_for('tenant_admin.store_admins'))
         
         if len(password) < 8:
             flash('パスワードは8文字以上にしてください', 'error')
             tenant = db.query(TTenant).filter(TTenant.id == tenant_id).first()
+            store = db.query(TTenpo).filter(TTenpo.id == store_id).first()
             stores_list = db.query(TTenpo).filter(TTenpo.tenant_id == tenant_id).order_by(TTenpo.id).all()
-            return render_template('tenant_store_admin_new.html', tenant=tenant, stores=stores_list, from_store_id=store_id, back_url=url_for('tenant_admin.store_admins'))
+            return render_template('tenant_store_admin_new.html', tenant=tenant, store=store, stores=stores_list, from_store_id=store_id, back_url=url_for('tenant_admin.store_admins'))
         
         try:
             # ログインID重複チェック
@@ -1277,8 +1457,9 @@ def store_admin_new():
             if existing:
                 flash(f'ログインID "{login_id}" は既に使用されています', 'error')
                 tenant = db.query(TTenant).filter(TTenant.id == tenant_id).first()
+                store = db.query(TTenpo).filter(TTenpo.id == store_id).first()
                 stores_list = db.query(TTenpo).filter(TTenpo.tenant_id == tenant_id).order_by(TTenpo.id).all()
-                return render_template('tenant_store_admin_new.html', tenant=tenant, stores=stores_list, from_store_id=store_id, back_url=url_for('tenant_admin.store_admins'))
+                return render_template('tenant_store_admin_new.html', tenant=tenant, store=store, stores=stores_list, from_store_id=store_id, back_url=url_for('tenant_admin.store_admins'))
             
 
             # 管理者作成
@@ -1317,16 +1498,18 @@ def store_admin_new():
             flash(f'エラー: {str(e)}', 'error')
         finally:
             tenant = db.query(TTenant).filter(TTenant.id == tenant_id).first()
+            store = db.query(TTenpo).filter(TTenpo.id == store_id).first()
             stores_list = db.query(TTenpo).filter(TTenpo.tenant_id == tenant_id).order_by(TTenpo.id).all()
             db.close()
-            return render_template('tenant_store_admin_new.html', tenant=tenant, stores=stores_list, from_store_id=store_id, back_url=url_for('tenant_admin.store_admins'))
+            return render_template('tenant_store_admin_new.html', tenant=tenant, store=store, stores=stores_list, from_store_id=store_id, back_url=url_for('tenant_admin.store_admins'))
     
     # GETリクエスト
     db = SessionLocal()
     try:
         tenant = db.query(TTenant).filter(TTenant.id == tenant_id).first()
+        store = db.query(TTenpo).filter(TTenpo.id == store_id).first()
         stores = db.query(TTenpo).filter(TTenpo.tenant_id == tenant_id).order_by(TTenpo.id).all()
-        return render_template('tenant_store_admin_new.html', tenant=tenant, stores=stores, from_store_id=store_id, back_url=url_for('tenant_admin.store_admins'))
+        return render_template('tenant_store_admin_new.html', tenant=tenant, store=store, stores=stores, from_store_id=store_id, back_url=url_for('tenant_admin.store_admins'))
     finally:
         db.close()
 
@@ -1360,7 +1543,9 @@ def store_admin_invite():
             # バリデーション
             if not login_id or not name:
                 flash('ログインIDと氏名は必須です', 'error')
-                return render_template('tenant_store_admin_invite.html')
+                tenant = db.query(TTenant).filter(TTenant.id == tenant_id).first()
+                store = db.query(TTenpo).filter(TTenpo.id == store_id).first()
+                return render_template('tenant_store_admin_invite.html', tenant=tenant, store=store)
             
             # 店舗がこのテナントに属しているか確認
             store = db.query(TTenpo).filter(
@@ -1369,7 +1554,8 @@ def store_admin_invite():
             
             if not store:
                 flash('店舗が見つかりません', 'error')
-                return render_template('tenant_store_admin_invite.html')
+                tenant = db.query(TTenant).filter(TTenant.id == tenant_id).first()
+                return render_template('tenant_store_admin_invite.html', tenant=tenant, store=None)
             
             # ログインIDと氏名が完全一致する店舗管理者を検索（同一テナント内）
             admin = db.query(TKanrisha).filter(
@@ -1383,7 +1569,8 @@ def store_admin_invite():
             
             if not admin:
                 flash(f'ログインID"{login_id}"と氏名"{name}"が一致する同一テナント内の店舗管理者が見つかりません', 'error')
-                return render_template('tenant_store_admin_invite.html')
+                tenant = db.query(TTenant).filter(TTenant.id == tenant_id).first()
+                return render_template('tenant_store_admin_invite.html', tenant=tenant, store=store)
             
             # 既にこの店舗に所属しているか確認
             existing_relation = db.query(TKanrishaTenpo).filter(
@@ -1395,7 +1582,8 @@ def store_admin_invite():
             
             if existing_relation:
                 flash(f'"{admin.name}"は既にこの店舗に所属しています', 'error')
-                return render_template('tenant_store_admin_invite.html')
+                tenant = db.query(TTenant).filter(TTenant.id == tenant_id).first()
+                return render_template('tenant_store_admin_invite.html', tenant=tenant, store=store)
             
             # 中間テーブルに追加
             new_relation = TKanrishaTenpo(
@@ -1410,7 +1598,9 @@ def store_admin_invite():
             flash(f'店舗管理者 "{admin.name}" を店舗"{store.名称}"に追加しました', 'success')
             return redirect(url_for('tenant_admin.store_admins'))
         
-        return render_template('tenant_store_admin_invite.html')
+        tenant = db.query(TTenant).filter(TTenant.id == tenant_id).first()
+        store = db.query(TTenpo).filter(TTenpo.id == store_id).first()
+        return render_template('tenant_store_admin_invite.html', tenant=tenant, store=store)
     finally:
         db.close()
 
@@ -1459,6 +1649,8 @@ def employees():
                 'name': e.name,
                 'email': e.email,
                 'active': e.active,
+                'created_at': e.created_at,
+                'updated_at': e.updated_at,
                 'stores': stores_list
             })
         
@@ -1923,7 +2115,11 @@ def app_management():
                     selected_tenant_name = tenant['name']
                     break
         
+        # テナント情報を取得
+        tenant = db.query(TTenant).filter(TTenant.id == session_tenant_id).first() if session_tenant_id else None
+        
         return render_template('tenant_admin_app_management.html',
+                             tenant=tenant,
                              tenants=tenants,
                              stores=stores,
                              selected_tenant_id=selected_tenant_id,
@@ -2177,7 +2373,12 @@ def store_admin_edit(admin_id):
                 # バリデーション
                 if not login_id or not name:
                     flash('ログインIDと氏名は必須です', 'error')
+                    tenant = db.query(TTenant).filter(TTenant.id == tenant_id).first()
+                    store_id = session.get('store_id')
+                    store = db.query(TTenpo).filter(TTenpo.id == store_id).first() if store_id else None
                     return render_template('tenant_admin_edit.html', 
+                                         tenant=tenant,
+                                         store=store,
                                          admin=admin,
                                          stores=stores,
                                          admin_store_ids=admin_store_ids,
@@ -2185,7 +2386,12 @@ def store_admin_edit(admin_id):
                 
                 if not store_ids:
                     flash('少なくとも1つの店舗を選択してください', 'error')
+                    tenant = db.query(TTenant).filter(TTenant.id == tenant_id).first()
+                    store_id = session.get('store_id')
+                    store = db.query(TTenpo).filter(TTenpo.id == store_id).first() if store_id else None
                     return render_template('tenant_admin_edit.html', 
+                                         tenant=tenant,
+                                         store=store,
                                          admin=admin,
                                          stores=stores,
                                          admin_store_ids=admin_store_ids,
@@ -2197,7 +2403,12 @@ def store_admin_edit(admin_id):
                 ).first()
                 if existing:
                     flash('このログインIDは既に使用されています', 'error')
+                    tenant = db.query(TTenant).filter(TTenant.id == tenant_id).first()
+                    store_id = session.get('store_id')
+                    store = db.query(TTenpo).filter(TTenpo.id == store_id).first() if store_id else None
                     return render_template('tenant_admin_edit.html', 
+                                         tenant=tenant,
+                                         store=store,
                                          admin=admin,
                                          stores=stores,
                                          admin_store_ids=admin_store_ids,
@@ -2211,7 +2422,12 @@ def store_admin_edit(admin_id):
                 # オーナーの場合は役割変更を禁止
                 if is_owner and role != ROLES["ADMIN"]:
                     flash('オーナーは役割を変更できません', 'error')
+                    tenant = db.query(TTenant).filter(TTenant.id == tenant_id).first()
+                    store_id = session.get('store_id')
+                    store = db.query(TTenpo).filter(TTenpo.id == store_id).first() if store_id else None
                     return render_template('tenant_admin_edit.html', 
+                                         tenant=tenant,
+                                         store=store,
                                          admin=admin,
                                          stores=stores,
                                          admin_store_ids=admin_store_ids,
@@ -2320,13 +2536,23 @@ def store_admin_edit(admin_id):
             except Exception as e:
                 db.rollback()
                 flash(f'更新中にエラーが発生しました: {str(e)}', 'error')
+                tenant = db.query(TTenant).filter(TTenant.id == tenant_id).first()
+                store_id = session.get('store_id')
+                store = db.query(TTenpo).filter(TTenpo.id == store_id).first() if store_id else None
                 return render_template('tenant_admin_edit.html', 
+                                     tenant=tenant,
+                                     store=store,
                                      admin=admin,
                                      stores=stores,
                                      admin_store_ids=admin_store_ids,
                                      store_owner_map=store_owner_map)
         
+        tenant = db.query(TTenant).filter(TTenant.id == tenant_id).first()
+        store_id = session.get('store_id')
+        store = db.query(TTenpo).filter(TTenpo.id == store_id).first() if store_id else None
         return render_template('tenant_admin_edit.html', 
+                             tenant=tenant,
+                             store=store,
                              admin=admin,
                              stores=stores,
                              admin_store_ids=admin_store_ids,
@@ -2725,3 +2951,46 @@ def select_store_from_mypage():
     session['store_id'] = int(store_id)
     flash('店舗を選択しました', 'success')
     return redirect(url_for('admin.dashboard'))
+
+
+@bp.route('/stores/<int:store_id>/apps')
+@require_roles(ROLES["TENANT_ADMIN"], ROLES["SYSTEM_ADMIN"])
+def store_apps(store_id):
+    """店舗レベルのアプリ一覧"""
+    tenant_id = session.get('tenant_id')
+    db = SessionLocal()
+    
+    try:
+        # 店舗情報を取得
+        store = db.query(TTenpo).filter(
+            and_(TTenpo.id == store_id, TTenpo.tenant_id == tenant_id)
+        ).first()
+        
+        if not store:
+            flash('店舗が見つかりません', 'error')
+            return redirect(url_for('tenant_admin.stores'))
+        
+        # テナント情報を取得
+        tenant = db.query(TTenant).filter(TTenant.id == tenant_id).first()
+        
+        # 店舗レベルで有効なアプリを取得
+        enabled_apps = []
+        
+        for app in AVAILABLE_APPS:
+            if app['scope'] == 'store':
+                app_setting = db.query(TTenpoAppSetting).filter(
+                    and_(
+                        TTenpoAppSetting.store_id == store_id,
+                        TTenpoAppSetting.app_name == app['name']
+                    )
+                ).first()
+                enabled = app_setting.enabled if app_setting else 1
+                
+                if enabled:
+                    enabled_apps.append(app)
+        
+        apps = enabled_apps
+        
+        return render_template('tenant_store_apps.html', tenant=tenant, store=store, apps=apps)
+    finally:
+        db.close()
