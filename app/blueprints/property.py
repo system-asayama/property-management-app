@@ -6,7 +6,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from sqlalchemy import select, update, delete
 from datetime import datetime, date
 from decimal import Decimal
-from app.db import get_db_session
+from app.db import SessionLocal
 from app.models_property import TBukken, THeya, TNyukyosha, TKeiyaku, TYachinShushi, TGenkashokaku
 
 property_bp = Blueprint('property', __name__, url_prefix='/property')
@@ -28,7 +28,7 @@ def require_tenant_admin(f):
 @require_tenant_admin
 def index():
     """不動産管理トップページ（ダッシュボード）"""
-    db = get_db_session()
+    db = SessionLocal()
     tenant_id = session.get('tenant_id')
     
     # 統計情報を取得
@@ -84,7 +84,7 @@ def index():
 @require_tenant_admin
 def properties():
     """物件一覧"""
-    db = get_db_session()
+    db = SessionLocal()
     tenant_id = session.get('tenant_id')
     
     properties = db.execute(
@@ -100,7 +100,7 @@ def properties():
 def property_new():
     """物件登録"""
     if request.method == 'POST':
-        db = get_db_session()
+        db = SessionLocal()
         tenant_id = session.get('tenant_id')
         
         # フォームデータを取得
@@ -136,7 +136,7 @@ def property_new():
 @require_tenant_admin
 def property_detail(id):
     """物件詳細"""
-    db = get_db_session()
+    db = SessionLocal()
     tenant_id = session.get('tenant_id')
     
     property_data = db.execute(
@@ -160,7 +160,7 @@ def property_detail(id):
 @require_tenant_admin
 def property_edit(id):
     """物件編集"""
-    db = get_db_session()
+    db = SessionLocal()
     tenant_id = session.get('tenant_id')
     
     property_data = db.execute(
@@ -201,7 +201,7 @@ def property_edit(id):
 @require_tenant_admin
 def property_delete(id):
     """物件削除（論理削除）"""
-    db = get_db_session()
+    db = SessionLocal()
     tenant_id = session.get('tenant_id')
     
     property_data = db.execute(
@@ -226,7 +226,7 @@ def property_delete(id):
 @require_tenant_admin
 def room_new(property_id):
     """部屋登録"""
-    db = get_db_session()
+    db = SessionLocal()
     tenant_id = session.get('tenant_id')
     
     # 物件の存在確認
@@ -265,7 +265,7 @@ def room_new(property_id):
 @require_tenant_admin
 def room_detail(id):
     """部屋詳細"""
-    db = get_db_session()
+    db = SessionLocal()
     tenant_id = session.get('tenant_id')
     
     room = db.execute(
@@ -298,7 +298,7 @@ def room_detail(id):
 @require_tenant_admin
 def room_edit(id):
     """部屋編集"""
-    db = get_db_session()
+    db = SessionLocal()
     tenant_id = session.get('tenant_id')
     
     room = db.execute(
@@ -342,7 +342,7 @@ def room_edit(id):
 @require_tenant_admin
 def room_delete(id):
     """部屋削除（論理削除）"""
-    db = get_db_session()
+    db = SessionLocal()
     tenant_id = session.get('tenant_id')
     
     room = db.execute(
@@ -376,7 +376,7 @@ def room_delete(id):
 @require_tenant_admin
 def tenants():
     """入居者一覧"""
-    db = get_db_session()
+    db = SessionLocal()
     tenant_id = session.get('tenant_id')
     
     tenants = db.execute(
@@ -392,7 +392,7 @@ def tenants():
 def tenant_new():
     """入居者登録"""
     if request.method == 'POST':
-        db = get_db_session()
+        db = SessionLocal()
         tenant_id = session.get('tenant_id')
         
         tenant_data = TNyukyosha(
@@ -420,7 +420,7 @@ def tenant_new():
 @require_tenant_admin
 def tenant_detail(id):
     """入居者詳細"""
-    db = get_db_session()
+    db = SessionLocal()
     tenant_id = session.get('tenant_id')
     
     tenant_data = db.execute(
@@ -444,7 +444,7 @@ def tenant_detail(id):
 @require_tenant_admin
 def tenant_edit(id):
     """入居者編集"""
-    db = get_db_session()
+    db = SessionLocal()
     tenant_id = session.get('tenant_id')
     
     tenant_data = db.execute(
@@ -478,7 +478,7 @@ def tenant_edit(id):
 @require_tenant_admin
 def tenant_delete(id):
     """入居者削除（論理削除）"""
-    db = get_db_session()
+    db = SessionLocal()
     tenant_id = session.get('tenant_id')
     
     tenant_data = db.execute(
@@ -503,7 +503,7 @@ def tenant_delete(id):
 @require_tenant_admin
 def contracts():
     """契約一覧"""
-    db = get_db_session()
+    db = SessionLocal()
     tenant_id = session.get('tenant_id')
     
     # テナントに紐づく契約を取得
@@ -539,7 +539,7 @@ def contracts():
 @require_tenant_admin
 def contract_new():
     """契約登録"""
-    db = get_db_session()
+    db = SessionLocal()
     tenant_id = session.get('tenant_id')
     
     if request.method == 'POST':
@@ -599,7 +599,7 @@ def contract_new():
 @require_tenant_admin
 def contract_detail(id):
     """契約詳細"""
-    db = get_db_session()
+    db = SessionLocal()
     tenant_id = session.get('tenant_id')
     
     contract = db.execute(
@@ -647,7 +647,7 @@ def contract_detail(id):
 @require_tenant_admin
 def contract_edit(id):
     """契約編集"""
-    db = get_db_session()
+    db = SessionLocal()
     tenant_id = session.get('tenant_id')
     
     contract = db.execute(
@@ -703,7 +703,7 @@ def contract_edit(id):
 @require_tenant_admin
 def contract_terminate(id):
     """契約終了"""
-    db = get_db_session()
+    db = SessionLocal()
     tenant_id = session.get('tenant_id')
     
     contract = db.execute(
@@ -748,7 +748,7 @@ def contract_terminate(id):
 @require_tenant_admin
 def depreciation():
     """減価償却一覧"""
-    db = get_db_session()
+    db = SessionLocal()
     tenant_id = session.get('tenant_id')
     
     # 物件一覧を取得
@@ -777,7 +777,7 @@ def depreciation():
 @require_tenant_admin
 def depreciation_detail(property_id):
     """物件別減価償却詳細"""
-    db = get_db_session()
+    db = SessionLocal()
     tenant_id = session.get('tenant_id')
     
     property_data = db.execute(
@@ -805,7 +805,7 @@ def depreciation_detail(property_id):
 @require_tenant_admin
 def depreciation_calculate(property_id):
     """減価償却計算"""
-    db = get_db_session()
+    db = SessionLocal()
     tenant_id = session.get('tenant_id')
     
     property_data = db.execute(
