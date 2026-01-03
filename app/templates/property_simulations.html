@@ -62,6 +62,10 @@
                                        class="btn btn-sm btn-info">
                                         <i class="fas fa-eye"></i> 詳細
                                     </a>
+                                    <a href="{{ url_for('property.simulation_edit', simulation_id=item.simulation.id) }}" 
+                                       class="btn btn-sm btn-primary">
+                                        <i class="fas fa-edit"></i> 編集
+                                    </a>
                                     <form action="{{ url_for('property.simulation_delete', simulation_id=item.simulation.id) }}" 
                                           method="POST" style="display: inline;"
                                           onsubmit="return confirm('このシミュレーションを削除してもよろしいですか？');">
