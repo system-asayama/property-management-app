@@ -56,16 +56,17 @@
                         <div class="row mb-3">
                             <div class="col-md-4">
                                 <label for="建築年月" class="form-label">建築年月</label>
-                                <input type="date" class="form-control" id="建築年月" name="建築年月" value="{{ property.建築年月.strftime('%Y-%m-%d') if property.建築年月 else '' }}">
+                                <input type="date" class="form-control" id="建築年月" name="建築年月" value="{{ property.建築年月.strftime('%Y-%m-%d') if property.建築年月 else '' }}" onchange="calculateUsefulLifeForProperty()">
                             </div>
                             <div class="col-md-4">
                                 <label for="構造" class="form-label">構造</label>
-                                <select class="form-select" id="構造" name="構造">
+                                <select class="form-select" id="構造" name="構造" onchange="calculateUsefulLifeForProperty()">
                                     <option value="">選択してください</option>
-                                    <option value="木造" {% if property.構造 == '木造' %}selected{% endif %}>木造</option>
-                                    <option value="鉄骨造" {% if property.構造 == '鉄骨造' %}selected{% endif %}>鉄骨造</option>
-                                    <option value="RC造" {% if property.構造 == 'RC造' %}selected{% endif %}>RC造</option>
-                                    <option value="SRC造" {% if property.構造 == 'SRC造' %}selected{% endif %}>SRC造</option>
+                                    <option value="RC造" {% if property.構造 == 'RC造' %}selected{% endif %}>RC造（鉄筋コンクリート造）- 耐用47年</option>
+                                    <option value="重量鉄骨造" {% if property.構造 == '重量鉄骨造' %}selected{% endif %}>重量鉄骨造 - 耐用34年</option>
+                                    <option value="軽量鉄骨造（肉厚3mm超3mm超）" {% if property.構造 == '軽量鉄骨造（肉厚3mm超3mm超）' %}selected{% endif %}>軽量鉄骨造（肉厚3mm超3mm超）- 耐用27年</option>
+                                    <option value="軽量鉄骨造（肉厚3mm以下）" {% if property.構造 == '軽量鉄骨造（肉厚3mm以下）' %}selected{% endif %}>軽量鉄骨造（肉厚3mm以下）- 耐用19年</option>
+                                    <option value="木造" {% if property.構造 == '木造' %}selected{% endif %}>木造 - 耐用22年</option>
                                     <option value="その他" {% if property.構造 == 'その他' %}selected{% endif %}>その他</option>
                                 </select>
                             </div>
@@ -94,7 +95,7 @@
                             </div>
                             <div class="col-md-6">
                                 <label for="取得年月日" class="form-label">取得年月日</label>
-                                <input type="date" class="form-control" id="取得年月日" name="取得年月日" value="{{ property.取得年月日.strftime('%Y-%m-%d') if property.取得年月日 else '' }}">
+                                <input type="date" class="form-control" id="取得年月日" name="取得年月日" value="{{ property.取得年月日.strftime('%Y-%m-%d') if property.取得年月日 else '' }}" onchange="calculateUsefulLifeForProperty()">
                             </div>
                         </div>
                         
@@ -136,4 +137,81 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// 法定耐用年数（構造別）
+const LEGAL_USEFUL_LIFE = {
+    'RC造': 47,
+    '重量鉄骨造': 34,
+    '軽量鉄骨造（肉厚3mm超3mm超）': 27,
+    '軽量鉄骨造（肉厚3mm以下）': 19,
+    '木造': 22
+};
+
+/**
+ * 耐用年数を自動算定する
+ */
+function calculateUsefulLifeForProperty() {
+    const constructionDate = document.getElementById('建築年月').value;
+    const acquisitionDate = document.getElementById('取得年月日').value;
+    const structure = document.getElementById('構造').value;
+    const usefulLifeInput = document.getElementById('耐用年数');
+    
+    // すべての入力が揃っていない場合は何もしない
+    if (!constructionDate || !acquisitionDate || !structure) {
+        return;
+    }
+    
+    // 法定耐用年数を取得
+    const legalLife = LEGAL_USEFUL_LIFE[structure];
+    if (!legalLife) {
+        // 法定耐用年数が不明な構造の場合は何もしない
+        return;
+    }
+    
+    // 日付をDateオブジェクトに変換
+    const construction = new Date(constructionDate);
+    const acquisition = new Date(acquisitionDate);
+    
+    // 取得年月日が建築年月より前の場合はエラー
+    if (acquisition < construction) {
+        alert('取得年月日は建築年月より後である必要があります');
+        usefulLifeInput.value = '';
+        return;
+    }
+    
+    // 経過年数を計算（年単位、1年未満切り捨て）
+    const elapsedYears = Math.floor((acquisition - construction) / (365.25 * 24 * 60 * 60 * 1000));
+    
+    let usefulLife;
+    
+    // 新築 or 中古を判定
+    if (elapsedYears < 1) {
+        // 新築の場合
+        usefulLife = legalLife;
+    } else {
+        // 中古の場合（簡便法）
+        if (elapsedYears >= legalLife) {
+            // 法定耐用年数の全部を経過している場合
+            usefulLife = Math.floor(legalLife * 0.2);
+        } else {
+            // 法定耐用年数の一部を経過している場合
+            usefulLife = Math.floor((legalLife - elapsedYears) + elapsedYears * 0.2);
+        }
+        
+        // 最低2年
+        usefulLife = Math.max(usefulLife, 2);
+    }
+    
+    // 耐用年数フィールドに設定
+    usefulLifeInput.value = usefulLife;
+}
+
+// ページ読み込み時に実行
+document.addEventListener('DOMContentLoaded', function() {
+    calculateUsefulLifeForProperty();
+});
+</script>
 {% endblock %}

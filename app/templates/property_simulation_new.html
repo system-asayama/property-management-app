@@ -122,13 +122,52 @@
                     </div>
                 </div>
                 
+                <!-- 耐用年数自動算定 -->
+                <div class="card mb-3 border-primary">
+                    <div class="card-header bg-primary text-white">
+                        <h6 class="mb-0">建物情報（耐用年数自動算定）</h6>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted small">建築年月、取得年月日、構造を入力すると、税法に基づいて耐用年数が自動算定されます。</p>
+                        
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="建築年月" class="form-label">建築年月</label>
+                                <input type="date" class="form-control" id="建築年月" name="建築年月" onchange="calculateUsefulLifeForSimulation()">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="取得年月日_sim" class="form-label">取得年月日</label>
+                                <input type="date" class="form-control" id="取得年月日_sim" name="取得年月日_sim" onchange="calculateUsefulLifeForSimulation()">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="構造_sim" class="form-label">構造</label>
+                                <select class="form-select" id="構造_sim" name="構造_sim" onchange="calculateUsefulLifeForSimulation()">
+                                    <option value="">選択してください</option>
+                                    <option value="RC造">RC造（鉄筋コンクリート造）- 耐用47年</option>
+                                    <option value="重量鉄骨造">重量鉄骨造 - 耐用34年</option>
+                                    <option value="軽量鉄骨造（肉厚3mm超3mm超）">軽量鉄骨造（肉厚3mm超3mm超）- 耐用27年</option>
+                                    <option value="軽量鉄骨造（肉厚3mm以下）">軽量鉄骨造（肉厚3mm以下）- 耐用19年</option>
+                                    <option value="木造">木造 - 耐用22年</option>
+                                    <option value="その他">その他</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-info mb-0">
+                            <i class="fas fa-info-circle"></i> 
+                            <strong>算定結果:</strong> 
+                            <span id="耐用年数算定結果">建築年月、取得年月日、構造を入力すると耐用年数が表示されます</span>
+                        </div>
+                    </div>
+                </div>
+                
                 <!-- 減価償却設定 -->
                 <div class="card mb-3 border-info">
                     <div class="card-header bg-info text-white">
                         <h6 class="mb-0">減価償却設定</h6>
                     </div>
                     <div class="card-body">
-                        <p class="text-muted small">建物、建物付属設備、構築物の3つに分けて設定します。取得価額と耐用年数を入力すると、減価償却費が自動計算されます。</p>
+                        <p class="text-muted small">建物、建物付属設備、構築物と3つに分けて設定します。取得価額と耐用年数を入力すると、減価償却費が自動計算されます。</p>
                         
                         <!-- 建物部分 -->
                         <div class="border rounded p-3 mb-3 bg-light">
@@ -326,6 +365,82 @@ function toggleSimulationType() {
         document.getElementById('年間家賃収入').value = '';
         document.getElementById('部屋数').value = '';
     }
+}
+
+// 耐用年数を自動算定
+function calculateUsefulLifeForSimulation() {
+    const constructionDate = document.getElementById('建築年月').value;
+    const acquisitionDate = document.getElementById('取得年月日_sim').value;
+    const structure = document.getElementById('構造_sim').value;
+    const resultSpan = document.getElementById('耐用年数算定結果');
+    const usefulLifeInput = document.getElementById('建物_耐用年数');
+    
+    // すべての入力が揃っていない場合
+    if (!constructionDate || !acquisitionDate || !structure) {
+        resultSpan.textContent = '建築年月、取得年月日、構造を入力すると耐用年数が表示されます';
+        return;
+    }
+    
+    // 法定耐用年数（構造別）
+    const LEGAL_USEFUL_LIFE = {
+        'RC造': 47,
+        '重量鉄骨造': 34,
+        '軽量鉄骨造（肉厚3mm超3mm超）': 27,
+        '軽量鉄骨造（肉厚3mm以下）': 19,
+        '木造': 22
+    };
+    
+    // 法定耐用年数を取得
+    const legalLife = LEGAL_USEFUL_LIFE[structure];
+    if (!legalLife) {
+        resultSpan.textContent = '構造が不明なため、耐用年数を算定できません';
+        return;
+    }
+    
+    // 日付をDateオブジェクトに変換
+    const construction = new Date(constructionDate);
+    const acquisition = new Date(acquisitionDate);
+    
+    // 取得年月日が建築年月より前の場合はエラー
+    if (acquisition < construction) {
+        resultSpan.innerHTML = '<span class="text-danger">取得年月日は建築年月より後である必要があります</span>';
+        return;
+    }
+    
+    // 経過年数を計算（年単位、1年未満切り捨て）
+    const elapsedYears = Math.floor((acquisition - construction) / (365.25 * 24 * 60 * 60 * 1000));
+    
+    let usefulLife;
+    let method;
+    
+    // 新築 or 中古を判定
+    if (elapsedYears < 1) {
+        // 新築の場合
+        usefulLife = legalLife;
+        method = '新築';
+    } else {
+        // 中古の場合（簡便法）
+        if (elapsedYears >= legalLife) {
+            // 法定耐用年数の全部を経過している場合
+            usefulLife = Math.floor(legalLife * 0.2);
+        } else {
+            // 法定耐用年数の一部を経過している場合
+            usefulLife = Math.floor((legalLife - elapsedYears) + elapsedYears * 0.2);
+        }
+        
+        // 最低2年
+        usefulLife = Math.max(usefulLife, 2);
+        method = '中古（簡便法）';
+    }
+    
+    // 結果を表示
+    resultSpan.innerHTML = `<strong class="text-success">耐用年数: ${usefulLife}年</strong> <span class="text-muted">(算定方法: ${method}, 経過年数: ${elapsedYears}年)</span>`;
+    
+    // 建物_耐用年数フィールドに設定
+    usefulLifeInput.value = usefulLife;
+    
+    // 減価償却費を再計算
+    calculateDepreciation();
 }
 
 // 減価償却費を自動計算
