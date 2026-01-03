@@ -15,6 +15,44 @@
     </nav>
     
     <form method="POST" action="{{ url_for('property.property_edit', id=property.id) }}">
+        <!-- 基本情報（タブの外に配置） -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="fas fa-info-circle"></i> 基本情報</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="物件名" class="form-label">物件名 <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="物件名" name="物件名" value="{{ property.物件名 }}" required>
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label for="物件種別" class="form-label">物件種別</label>
+                        <select class="form-select" id="物件種別" name="物件種別">
+                            <option value="">選択してください</option>
+                            <option value="マンション" {% if property.物件種別 == 'マンション' %}selected{% endif %}>マンション</option>
+                            <option value="アパート" {% if property.物件種別 == 'アパート' %}selected{% endif %}>アパート</option>
+                            <option value="戸建て" {% if property.物件種別 == '戸建て' %}selected{% endif %}>戸建て</option>
+                            <option value="店舗" {% if property.物件種別 == '店舗' %}selected{% endif %}>店舗</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="郵便番号" class="form-label">郵便番号</label>
+                        <input type="text" class="form-control" id="郵便番号" name="郵便番号" value="{{ property.郵便番号 }}">
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label for="住所" class="form-label">住所</label>
+                        <input type="text" class="form-control" id="住所" name="住所" value="{{ property.住所 }}">
+                    </div>
+                </div>
+            </div>
+        </div>
+        
         <!-- タブナビゲーション -->
         <ul class="nav nav-tabs" id="propertyTabs" role="tablist">
             <li class="nav-item" role="presentation">
@@ -38,35 +76,7 @@
         <div class="tab-content mt-3" id="propertyTabsContent">
             <!-- 建物本体タブ -->
             <div class="tab-pane fade show active" id="building" role="tabpanel" aria-labelledby="building-tab">
-                <h4 class="mb-3">基本情報</h4>
-                
-                <div class="mb-3">
-                    <label for="物件名" class="form-label">物件名 <span class="text-danger">*</span></label>
-                    <input type="text" class="form-control" id="物件名" name="物件名" value="{{ property.物件名 }}" required>
-                </div>
-                
-                <div class="mb-3">
-                    <label for="物件種別" class="form-label">物件種別</label>
-                    <select class="form-select" id="物件種別" name="物件種別">
-                        <option value="">選択してください</option>
-                        <option value="マンション" {% if property.物件種別 == 'マンション' %}selected{% endif %}>マンション</option>
-                        <option value="アパート" {% if property.物件種別 == 'アパート' %}selected{% endif %}>アパート</option>
-                        <option value="戸建て" {% if property.物件種別 == '戸建て' %}selected{% endif %}>戸建て</option>
-                        <option value="店舗" {% if property.物件種別 == '店舗' %}selected{% endif %}>店舗</option>
-                    </select>
-                </div>
-                
-                <div class="mb-3">
-                    <label for="郵便番号" class="form-label">郵便番号</label>
-                    <input type="text" class="form-control" id="郵便番号" name="郵便番号" value="{{ property.郵便番号 }}">
-                </div>
-                
-                <div class="mb-3">
-                    <label for="住所" class="form-label">住所</label>
-                    <input type="text" class="form-control" id="住所" name="住所" value="{{ property.住所 }}">
-                </div>
-                
-                <h4 class="mb-3 mt-4">建物情報</h4>
+                <h4 class="mb-3">建物情報</h4>
                 
                 <div class="mb-3">
                     <label for="建築年月" class="form-label">建築年月</label>
@@ -222,30 +232,23 @@
             </div>
         </div>
         
-        <!-- ボタン -->
-        <div class="mt-4">
+        <!-- フォーム送信ボタン -->
+        <div class="mt-4 mb-4">
             <button type="submit" class="btn btn-primary">更新</button>
             <a href="{{ url_for('property.property_detail', id=property.id) }}" class="btn btn-secondary">キャンセル</a>
         </div>
     </form>
 </div>
 
-{% endblock %}
-
-{% block extra_js %}
 <script>
-// 耐用年数自動算定関数
+// 耐用年数の自動計算
 function calculateUsefulLife() {
-    const buildingDate = document.getElementById('建築年月').value;
-    const acquisitionDate = document.getElementById('取得年月日').value;
     const structure = document.getElementById('構造').value;
+    const acquisitionDate = document.getElementById('取得年月日').value;
+    const constructionDate = document.getElementById('建築年月').value;
     
-    if (!buildingDate || !acquisitionDate || !structure) {
-        return;
-    }
-    
-    // 構造別の法定耐用年数
-    const legalUsefulLife = {
+    // 構造に基づく法定耐用年数
+    const usefulLifeMap = {
         'RC造': 47,
         '重量鉄骨造': 34,
         '軽量鉄骨造（肉厚3mm超4mm以下）': 27,
@@ -253,45 +256,26 @@ function calculateUsefulLife() {
         '木造': 22
     };
     
-    const legal = legalUsefulLife[structure];
-    if (!legal) {
-        return;
+    if (structure && structure in usefulLifeMap) {
+        let usefulLife = usefulLifeMap[structure];
+        
+        // 中古資産の場合の耐用年数計算
+        if (acquisitionDate && constructionDate) {
+            const acquisition = new Date(acquisitionDate);
+            const construction = new Date(constructionDate);
+            const monthsElapsed = (acquisition - construction) / (1000 * 60 * 60 * 24 * 30);
+            const yearsElapsed = Math.floor(monthsElapsed / 12);
+            
+            if (yearsElapsed > 0) {
+                // 簡便法: (法定耐用年数 - 経過年数) + 経過年数 × 0.2
+                const remainingLife = usefulLife - yearsElapsed;
+                const additionalLife = Math.floor(yearsElapsed * 0.2);
+                usefulLife = Math.max(2, remainingLife + additionalLife);
+            }
+        }
+        
+        document.getElementById('耐用年数').value = usefulLife;
     }
-    
-    // 経過月数を計算
-    const building = new Date(buildingDate);
-    const acquisition = new Date(acquisitionDate);
-    const elapsedMonths = (acquisition.getFullYear() - building.getFullYear()) * 12 + 
-                          (acquisition.getMonth() - building.getMonth());
-    
-    // 経過年数（1年未満切り捨て）
-    const elapsedYears = Math.floor(elapsedMonths / 12);
-    
-    let usefulLife;
-    let method;
-    
-    if (elapsedYears < 1) {
-        // 新築
-        usefulLife = legal;
-        method = '新築';
-    } else if (elapsedYears >= legal) {
-        // 法定耐用年数の全部を経過
-        usefulLife = Math.floor(legal * 0.2);
-        method = '中古（簡便法）';
-    } else {
-        // 法定耐用年数の一部を経過
-        const usefulLifeMonths = (legal * 12 - elapsedMonths) + elapsedMonths * 0.2;
-        usefulLife = Math.floor(usefulLifeMonths / 12);
-        method = '中古（簡便法）';
-    }
-    
-    // 耐用年数フィールドに設定
-    document.getElementById('耐用年数').value = usefulLife;
 }
-
-// ページ読み込み時に実行
-document.addEventListener('DOMContentLoaded', function() {
-    calculateUsefulLife();
-});
 </script>
 {% endblock %}
