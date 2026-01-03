@@ -173,6 +173,8 @@ def create_app() -> Flask:
             (models_property.TGenkashokaku, 'T_減価償却'),
             (models_property.TSimulation, 'T_シミュレーション'),
             (models_property.TSimulationResult, 'T_シミュレーション結果'),
+            (models_property.TBukkenKeihi, 'T_物件経費'),
+            (models_property.THeyaKeihi, 'T_部屋経費'),
         ]
         
         auto_migrate_all(engine, migration_targets)
