@@ -199,3 +199,37 @@ class TSimulationResult(Base):
     キャッシュフロー = Column(Numeric(15, 2), default=0)
     ローン残高 = Column(Numeric(15, 2), default=0)
     created_at = Column(DateTime, server_default=func.now())
+
+
+class TBukkenKeihi(Base):
+    """T_物件経費テーブル"""
+    __tablename__ = 'T_物件経費'
+    
+    物件経費id = Column(Integer, primary_key=True, autoincrement=True)
+    物件id = Column(Integer, ForeignKey('T_物件.物件id'), nullable=False)
+    経費名 = Column(String(100), nullable=False)
+    経費カテゴリ = Column(String(50), nullable=False)
+    金額 = Column(Numeric(15, 2), nullable=False)
+    発生日 = Column(Date, nullable=False)
+    支払日 = Column(Date, nullable=True)
+    支払方法 = Column(String(50), nullable=True)
+    備考 = Column(Text, nullable=True)
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
+
+class THeyaKeihi(Base):
+    """T_部屋経費テーブル"""
+    __tablename__ = 'T_部屋経費'
+    
+    部屋経費id = Column(Integer, primary_key=True, autoincrement=True)
+    部屋id = Column(Integer, ForeignKey('T_部屋.部屋id'), nullable=False)
+    経費名 = Column(String(100), nullable=False)
+    経費カテゴリ = Column(String(50), nullable=False)
+    金額 = Column(Numeric(15, 2), nullable=False)
+    発生日 = Column(Date, nullable=False)
+    支払日 = Column(Date, nullable=True)
+    支払方法 = Column(String(50), nullable=True)
+    備考 = Column(Text, nullable=True)
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())

@@ -69,6 +69,9 @@
                     <a href="{{ url_for('property.room_new', property_id=property.id) }}" class="btn btn-success">
                         <i class="fas fa-plus"></i> 部屋を追加
                     </a>
+                    <a href="{{ url_for('property.expense_list_property', property_id=property.id) }}" class="btn btn-info">
+                        <i class="bi bi-cash-stack"></i> 経費一覧
+                    </a>
                 </div>
             </div>
         </div>

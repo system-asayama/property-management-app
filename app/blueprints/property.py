@@ -7,7 +7,7 @@ from sqlalchemy import select, update, delete
 from datetime import datetime, date
 from decimal import Decimal
 from app.db import SessionLocal
-from app.models_property import TBukken, THeya, TNyukyosha, TKeiyaku, TYachinShushi, TGenkashokaku, TSimulation, TSimulationResult
+from app.models_property import TBukken, THeya, TNyukyosha, TKeiyaku, TYachinShushi, TGenkashokaku, TSimulation, TSimulationResult, TBukkenKeihi, THeyaKeihi
 
 property_bp = Blueprint('property', __name__, url_prefix='/property')
 
@@ -1306,3 +1306,366 @@ def simulation_recalculate(simulation_id):
     
     db.close()
     return redirect(url_for('property.simulation_detail', simulation_id=simulation_id))
+
+
+# ==================== 物件経費管理 ====================
+
+# 経費カテゴリと支払方法の定義
+PROPERTY_EXPENSE_CATEGORIES = ['税金', '保険', '管理費', '修繕費', '水道光熱費', 'その他']
+ROOM_EXPENSE_CATEGORIES = ['原状回復', 'クリーニング', '仲介手数料', '広告宣伝', '修繕費', '水道光熱費', 'その他']
+PAYMENT_METHODS = ['現金', '銀行振込', 'クレジットカード', '口座引落']
+
+
+@property_bp.route('/properties/<int:property_id>/expenses')
+@require_tenant_admin
+def expense_list_property(property_id):
+    """物件経費一覧"""
+    db = SessionLocal()
+    tenant_id = session.get('tenant_id')
+    
+    # 物件の存在確認
+    property_data = db.execute(
+        select(TBukken).where(TBukken.id == property_id, TBukken.tenant_id == tenant_id, TBukken.有効 == 1)
+    ).scalar_one_or_none()
+    
+    if not property_data:
+        flash('物件が見つかりません', 'danger')
+        return redirect(url_for('property.properties'))
+    
+    # 経費一覧を取得
+    expenses = db.execute(
+        select(TBukkenKeihi).where(TBukkenKeihi.物件id == property_id)
+        .order_by(TBukkenKeihi.発生日.desc())
+    ).scalars().all()
+    
+    # 合計金額を計算
+    total_amount = sum(expense.金額 for expense in expenses)
+    
+    db.close()
+    return render_template('property_expense_list.html', 
+                         property=property_data, 
+                         expenses=expenses,
+                         total_amount=total_amount)
+
+
+@property_bp.route('/properties/<int:property_id>/expenses/new', methods=['GET', 'POST'])
+@require_tenant_admin
+def expense_new_property(property_id):
+    """物件経費登録"""
+    db = SessionLocal()
+    tenant_id = session.get('tenant_id')
+    
+    # 物件の存在確認
+    property_data = db.execute(
+        select(TBukken).where(TBukken.id == property_id, TBukken.tenant_id == tenant_id, TBukken.有効 == 1)
+    ).scalar_one_or_none()
+    
+    if not property_data:
+        flash('物件が見つかりません', 'danger')
+        return redirect(url_for('property.properties'))
+    
+    if request.method == 'POST':
+        expense_data = TBukkenKeihi(
+            物件id=property_id,
+            経費名=request.form.get('経費名'),
+            経費カテゴリ=request.form.get('経費カテゴリ'),
+            金額=Decimal(request.form.get('金額')),
+            発生日=datetime.strptime(request.form.get('発生日'), '%Y-%m-%d').date(),
+            支払日=datetime.strptime(request.form.get('支払日'), '%Y-%m-%d').date() if request.form.get('支払日') else None,
+            支払方法=request.form.get('支払方法') if request.form.get('支払方法') else None,
+            備考=request.form.get('備考')
+        )
+        
+        db.add(expense_data)
+        db.commit()
+        db.close()
+        
+        flash('経費を登録しました', 'success')
+        return redirect(url_for('property.expense_list_property', property_id=property_id))
+    
+    db.close()
+    return render_template('property_expense_form.html', 
+                         property=property_data,
+                         categories=PROPERTY_EXPENSE_CATEGORIES,
+                         payment_methods=PAYMENT_METHODS,
+                         expense=None)
+
+
+@property_bp.route('/properties/<int:property_id>/expenses/<int:expense_id>/edit', methods=['GET', 'POST'])
+@require_tenant_admin
+def expense_edit_property(property_id, expense_id):
+    """物件経費編集"""
+    db = SessionLocal()
+    tenant_id = session.get('tenant_id')
+    
+    # 物件の存在確認
+    property_data = db.execute(
+        select(TBukken).where(TBukken.id == property_id, TBukken.tenant_id == tenant_id, TBukken.有効 == 1)
+    ).scalar_one_or_none()
+    
+    if not property_data:
+        flash('物件が見つかりません', 'danger')
+        return redirect(url_for('property.properties'))
+    
+    # 経費の存在確認
+    expense = db.execute(
+        select(TBukkenKeihi).where(TBukkenKeihi.物件経費id == expense_id, TBukkenKeihi.物件id == property_id)
+    ).scalar_one_or_none()
+    
+    if not expense:
+        flash('経費が見つかりません', 'danger')
+        return redirect(url_for('property.expense_list_property', property_id=property_id))
+    
+    if request.method == 'POST':
+        expense.経費名 = request.form.get('経費名')
+        expense.経費カテゴリ = request.form.get('経費カテゴリ')
+        expense.金額 = Decimal(request.form.get('金額'))
+        expense.発生日 = datetime.strptime(request.form.get('発生日'), '%Y-%m-%d').date()
+        expense.支払日 = datetime.strptime(request.form.get('支払日'), '%Y-%m-%d').date() if request.form.get('支払日') else None
+        expense.支払方法 = request.form.get('支払方法') if request.form.get('支払方法') else None
+        expense.備考 = request.form.get('備考')
+        expense.updated_at = datetime.now()
+        
+        db.commit()
+        db.close()
+        
+        flash('経費を更新しました', 'success')
+        return redirect(url_for('property.expense_list_property', property_id=property_id))
+    
+    db.close()
+    return render_template('property_expense_form.html', 
+                         property=property_data,
+                         categories=PROPERTY_EXPENSE_CATEGORIES,
+                         payment_methods=PAYMENT_METHODS,
+                         expense=expense)
+
+
+@property_bp.route('/properties/<int:property_id>/expenses/<int:expense_id>/delete', methods=['POST'])
+@require_tenant_admin
+def expense_delete_property(property_id, expense_id):
+    """物件経費削除"""
+    db = SessionLocal()
+    tenant_id = session.get('tenant_id')
+    
+    # 物件の存在確認
+    property_data = db.execute(
+        select(TBukken).where(TBukken.id == property_id, TBukken.tenant_id == tenant_id, TBukken.有効 == 1)
+    ).scalar_one_or_none()
+    
+    if not property_data:
+        flash('物件が見つかりません', 'danger')
+        return redirect(url_for('property.properties'))
+    
+    # 経費の存在確認
+    expense = db.execute(
+        select(TBukkenKeihi).where(TBukkenKeihi.物件経費id == expense_id, TBukkenKeihi.物件id == property_id)
+    ).scalar_one_or_none()
+    
+    if not expense:
+        flash('経費が見つかりません', 'danger')
+        return redirect(url_for('property.expense_list_property', property_id=property_id))
+    
+    db.delete(expense)
+    db.commit()
+    db.close()
+    
+    flash('経費を削除しました', 'success')
+    return redirect(url_for('property.expense_list_property', property_id=property_id))
+
+
+# ==================== 部屋経費管理 ====================
+
+@property_bp.route('/rooms/<int:room_id>/expenses')
+@require_tenant_admin
+def expense_list_room(room_id):
+    """部屋経費一覧"""
+    db = SessionLocal()
+    tenant_id = session.get('tenant_id')
+    
+    # 部屋の存在確認
+    room = db.execute(
+        select(THeya).where(THeya.id == room_id, THeya.有効 == 1)
+    ).scalar_one_or_none()
+    
+    if not room:
+        flash('部屋が見つかりません', 'danger')
+        return redirect(url_for('property.properties'))
+    
+    # 物件情報を取得してテナントIDを確認
+    property_data = db.execute(
+        select(TBukken).where(TBukken.id == room.property_id, TBukken.tenant_id == tenant_id, TBukken.有効 == 1)
+    ).scalar_one_or_none()
+    
+    if not property_data:
+        flash('物件が見つかりません', 'danger')
+        return redirect(url_for('property.properties'))
+    
+    # 経費一覧を取得
+    expenses = db.execute(
+        select(THeyaKeihi).where(THeyaKeihi.部屋id == room_id)
+        .order_by(THeyaKeihi.発生日.desc())
+    ).scalars().all()
+    
+    # 合計金額を計算
+    total_amount = sum(expense.金額 for expense in expenses)
+    
+    db.close()
+    return render_template('room_expense_list.html', 
+                         room=room,
+                         property=property_data,
+                         expenses=expenses,
+                         total_amount=total_amount)
+
+
+@property_bp.route('/rooms/<int:room_id>/expenses/new', methods=['GET', 'POST'])
+@require_tenant_admin
+def expense_new_room(room_id):
+    """部屋経費登録"""
+    db = SessionLocal()
+    tenant_id = session.get('tenant_id')
+    
+    # 部屋の存在確認
+    room = db.execute(
+        select(THeya).where(THeya.id == room_id, THeya.有効 == 1)
+    ).scalar_one_or_none()
+    
+    if not room:
+        flash('部屋が見つかりません', 'danger')
+        return redirect(url_for('property.properties'))
+    
+    # 物件情報を取得してテナントIDを確認
+    property_data = db.execute(
+        select(TBukken).where(TBukken.id == room.property_id, TBukken.tenant_id == tenant_id, TBukken.有効 == 1)
+    ).scalar_one_or_none()
+    
+    if not property_data:
+        flash('物件が見つかりません', 'danger')
+        return redirect(url_for('property.properties'))
+    
+    if request.method == 'POST':
+        expense_data = THeyaKeihi(
+            部屋id=room_id,
+            経費名=request.form.get('経費名'),
+            経費カテゴリ=request.form.get('経費カテゴリ'),
+            金額=Decimal(request.form.get('金額')),
+            発生日=datetime.strptime(request.form.get('発生日'), '%Y-%m-%d').date(),
+            支払日=datetime.strptime(request.form.get('支払日'), '%Y-%m-%d').date() if request.form.get('支払日') else None,
+            支払方法=request.form.get('支払方法') if request.form.get('支払方法') else None,
+            備考=request.form.get('備考')
+        )
+        
+        db.add(expense_data)
+        db.commit()
+        db.close()
+        
+        flash('経費を登録しました', 'success')
+        return redirect(url_for('property.expense_list_room', room_id=room_id))
+    
+    db.close()
+    return render_template('room_expense_form.html', 
+                         room=room,
+                         property=property_data,
+                         categories=ROOM_EXPENSE_CATEGORIES,
+                         payment_methods=PAYMENT_METHODS,
+                         expense=None)
+
+
+@property_bp.route('/rooms/<int:room_id>/expenses/<int:expense_id>/edit', methods=['GET', 'POST'])
+@require_tenant_admin
+def expense_edit_room(room_id, expense_id):
+    """部屋経費編集"""
+    db = SessionLocal()
+    tenant_id = session.get('tenant_id')
+    
+    # 部屋の存在確認
+    room = db.execute(
+        select(THeya).where(THeya.id == room_id, THeya.有効 == 1)
+    ).scalar_one_or_none()
+    
+    if not room:
+        flash('部屋が見つかりません', 'danger')
+        return redirect(url_for('property.properties'))
+    
+    # 物件情報を取得してテナントIDを確認
+    property_data = db.execute(
+        select(TBukken).where(TBukken.id == room.property_id, TBukken.tenant_id == tenant_id, TBukken.有効 == 1)
+    ).scalar_one_or_none()
+    
+    if not property_data:
+        flash('物件が見つかりません', 'danger')
+        return redirect(url_for('property.properties'))
+    
+    # 経費の存在確認
+    expense = db.execute(
+        select(THeyaKeihi).where(THeyaKeihi.部屋経費id == expense_id, THeyaKeihi.部屋id == room_id)
+    ).scalar_one_or_none()
+    
+    if not expense:
+        flash('経費が見つかりません', 'danger')
+        return redirect(url_for('property.expense_list_room', room_id=room_id))
+    
+    if request.method == 'POST':
+        expense.経費名 = request.form.get('経費名')
+        expense.経費カテゴリ = request.form.get('経費カテゴリ')
+        expense.金額 = Decimal(request.form.get('金額'))
+        expense.発生日 = datetime.strptime(request.form.get('発生日'), '%Y-%m-%d').date()
+        expense.支払日 = datetime.strptime(request.form.get('支払日'), '%Y-%m-%d').date() if request.form.get('支払日') else None
+        expense.支払方法 = request.form.get('支払方法') if request.form.get('支払方法') else None
+        expense.備考 = request.form.get('備考')
+        expense.updated_at = datetime.now()
+        
+        db.commit()
+        db.close()
+        
+        flash('経費を更新しました', 'success')
+        return redirect(url_for('property.expense_list_room', room_id=room_id))
+    
+    db.close()
+    return render_template('room_expense_form.html', 
+                         room=room,
+                         property=property_data,
+                         categories=ROOM_EXPENSE_CATEGORIES,
+                         payment_methods=PAYMENT_METHODS,
+                         expense=expense)
+
+
+@property_bp.route('/rooms/<int:room_id>/expenses/<int:expense_id>/delete', methods=['POST'])
+@require_tenant_admin
+def expense_delete_room(room_id, expense_id):
+    """部屋経費削除"""
+    db = SessionLocal()
+    tenant_id = session.get('tenant_id')
+    
+    # 部屋の存在確認
+    room = db.execute(
+        select(THeya).where(THeya.id == room_id, THeya.有効 == 1)
+    ).scalar_one_or_none()
+    
+    if not room:
+        flash('部屋が見つかりません', 'danger')
+        return redirect(url_for('property.properties'))
+    
+    # 物件情報を取得してテナントIDを確認
+    property_data = db.execute(
+        select(TBukken).where(TBukken.id == room.property_id, TBukken.tenant_id == tenant_id, TBukken.有効 == 1)
+    ).scalar_one_or_none()
+    
+    if not property_data:
+        flash('物件が見つかりません', 'danger')
+        return redirect(url_for('property.properties'))
+    
+    # 経費の存在確認
+    expense = db.execute(
+        select(THeyaKeihi).where(THeyaKeihi.部屋経費id == expense_id, THeyaKeihi.部屋id == room_id)
+    ).scalar_one_or_none()
+    
+    if not expense:
+        flash('経費が見つかりません', 'danger')
+        return redirect(url_for('property.expense_list_room', room_id=room_id))
+    
+    db.delete(expense)
+    db.commit()
+    db.close()
+    
+    flash('経費を削除しました', 'success')
+    return redirect(url_for('property.expense_list_room', room_id=room_id))
