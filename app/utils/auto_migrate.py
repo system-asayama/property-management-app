@@ -29,8 +29,17 @@ def get_model_columns(model):
 
 def add_missing_columns(engine, model, table_name):
     """不足しているカラムを追加"""
-    existing_columns = get_table_columns(engine, table_name)
-    model_columns = get_model_columns(model)
+    try:
+        existing_columns = get_table_columns(engine, table_name)
+    except Exception as e:
+        logger.warning(f"テーブル '{table_name}' が存在しないためスキップ: {e}")
+        return True
+    
+    try:
+        model_columns = get_model_columns(model)
+    except Exception as e:
+        logger.error(f"モデルのカラム取得に失敗: {e}")
+        return False
     
     missing_columns = model_columns - existing_columns
     
