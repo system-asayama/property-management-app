@@ -13,13 +13,20 @@ property_bp = Blueprint('property', __name__, url_prefix='/property')
 
 
 def require_tenant_admin(f):
-    """テナント管理者のみアクセス可能にするデコレータ"""
+    """テナント管理者またはシステム管理者のみアクセス可能にするデコレータ"""
     from functools import wraps
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if 'user_id' not in session or session.get('role') != 'tenant_admin':
+        role = session.get('role')
+        if 'user_id' not in session or role not in ['tenant_admin', 'system_admin']:
             flash('この機能にはテナント管理者権限が必要です', 'danger')
             return redirect(url_for('auth.select_login'))
+        
+        # テナントIDがセッションに設定されているか確認
+        if 'tenant_id' not in session:
+            flash('テナントが選択されていません', 'warning')
+            return redirect(url_for('tenant_admin.tenant_apps'))
+        
         return f(*args, **kwargs)
     return decorated_function
 
