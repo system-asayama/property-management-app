@@ -8,7 +8,7 @@
     
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="{{ url_for('property.property_list') }}">物件一覧</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('property.properties') }}">物件一覧</a></li>
             <li class="breadcrumb-item"><a href="{{ url_for('property.property_detail', id=property.id) }}">{{ property.物件名 }}</a></li>
             <li class="breadcrumb-item active" aria-current="page">編集</li>
         </ol>
