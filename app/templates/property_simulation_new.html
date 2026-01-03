@@ -136,11 +136,11 @@
                             <div class="row">
                                 <div class="col-md-6 mb-2">
                                     <label for="建物_取得価額" class="form-label">取得価額（円）</label>
-                                    <input type="number" class="form-control" id="建物_取得価額" name="建物_取得価額" value="0" min="0" step="1" onchange="calculateDepreciation()">
+                                    <input type="number" class="form-control" id="建物_取得価額" name="建物_取得価額" value="0" min="0" step="1" oninput="calculateDepreciation()" onchange="calculateDepreciation()">
                                 </div>
                                 <div class="col-md-3 mb-2">
                                     <label for="建物_耐用年数" class="form-label">耐用年数（年）</label>
-                                    <input type="number" class="form-control" id="建物_耐用年数" name="建物_耐用年数" value="47" min="1" step="1" onchange="calculateDepreciation()">
+                                    <input type="number" class="form-control" id="建物_耐用年数" name="建物_耐用年数" value="47" min="1" step="1" oninput="calculateDepreciation()" onchange="calculateDepreciation()">
                                     <div class="form-text small">RC造:47年</div>
                                 </div>
                                 <div class="col-md-3 mb-2">
@@ -154,7 +154,7 @@
                             <div class="row">
                                 <div class="col-md-6 mb-2">
                                     <label for="建物_残存価額" class="form-label">残存価額（円）</label>
-                                    <input type="number" class="form-control" id="建物_残存価額" name="建物_残存価額" value="0" min="0" step="1" onchange="calculateDepreciation()">
+                                    <input type="number" class="form-control" id="建物_残存価額" name="建物_残存価額" value="0" min="0" step="1" oninput="calculateDepreciation()" onchange="calculateDepreciation()">
                                     <div class="form-text small">通常は0円（平成19年以降の取得資産）</div>
                                 </div>
                                 <div class="col-md-6 mb-2">
@@ -170,11 +170,11 @@
                             <div class="row">
                                 <div class="col-md-6 mb-2">
                                     <label for="付属設備_取得価額" class="form-label">取得価額（円）</label>
-                                    <input type="number" class="form-control" id="付属設備_取得価額" name="付属設備_取得価額" value="0" min="0" step="1" onchange="calculateDepreciation()">
+                                    <input type="number" class="form-control" id="付属設備_取得価額" name="付属設備_取得価額" value="0" min="0" step="1" oninput="calculateDepreciation()" onchange="calculateDepreciation()">
                                 </div>
                                 <div class="col-md-3 mb-2">
                                     <label for="付属設備_耐用年数" class="form-label">耐用年数（年）</label>
-                                    <input type="number" class="form-control" id="付属設備_耐用年数" name="付属設備_耐用年数" value="15" min="1" step="1" onchange="calculateDepreciation()">
+                                    <input type="number" class="form-control" id="付属設備_耐用年数" name="付属設備_耐用年数" value="15" min="1" step="1" oninput="calculateDepreciation()" onchange="calculateDepreciation()">
                                     <div class="form-text small">標準:15年</div>
                                 </div>
                                 <div class="col-md-3 mb-2">
@@ -188,7 +188,7 @@
                             <div class="row">
                                 <div class="col-md-6 mb-2">
                                     <label for="付属設備_残存価額" class="form-label">残存価額（円）</label>
-                                    <input type="number" class="form-control" id="付属設備_残存価額" name="付属設備_残存価額" value="0" min="0" step="1" onchange="calculateDepreciation()">
+                                    <input type="number" class="form-control" id="付属設備_残存価額" name="付属設備_残存価額" value="0" min="0" step="1" oninput="calculateDepreciation()" onchange="calculateDepreciation()">
                                 </div>
                                 <div class="col-md-6 mb-2">
                                     <label class="form-label">年間減価償却費（自動計算）</label>
@@ -203,11 +203,11 @@
                             <div class="row">
                                 <div class="col-md-6 mb-2">
                                     <label for="構築物_取得価額" class="form-label">取得価額（円）</label>
-                                    <input type="number" class="form-control" id="構築物_取得価額" name="構築物_取得価額" value="0" min="0" step="1" onchange="calculateDepreciation()">
+                                    <input type="number" class="form-control" id="構築物_取得価額" name="構築物_取得価額" value="0" min="0" step="1" oninput="calculateDepreciation()" onchange="calculateDepreciation()">
                                 </div>
                                 <div class="col-md-3 mb-2">
                                     <label for="構築物_耐用年数" class="form-label">耐用年数（年）</label>
-                                    <input type="number" class="form-control" id="構築物_耐用年数" name="構築物_耐用年数" value="20" min="1" step="1" onchange="calculateDepreciation()">
+                                    <input type="number" class="form-control" id="構築物_耐用年数" name="構築物_耐用年数" value="20" min="1" step="1" oninput="calculateDepreciation()" onchange="calculateDepreciation()">
                                     <div class="form-text small">標準:20年</div>
                                 </div>
                                 <div class="col-md-3 mb-2">
@@ -221,7 +221,7 @@
                             <div class="row">
                                 <div class="col-md-6 mb-2">
                                     <label for="構築物_残存価額" class="form-label">残存価額（円）</label>
-                                    <input type="number" class="form-control" id="構築物_残存価額" name="構築物_残存価額" value="0" min="0" step="1" onchange="calculateDepreciation()">
+                                    <input type="number" class="form-control" id="構築物_残存価額" name="構築物_残存価額" value="0" min="0" step="1" oninput="calculateDepreciation()" onchange="calculateDepreciation()">
                                 </div>
                                 <div class="col-md-6 mb-2">
                                     <label class="form-label">年間減価償却費（自動計算）</label>
