@@ -2139,32 +2139,64 @@ def app_management():
         db.close()
 
 
-@bp.route('/tenant_apps')
+@bp.route('/tenant_apps', methods=['GET', 'POST'])
 @require_roles(ROLES["TENANT_ADMIN"], ROLES["SYSTEM_ADMIN"])
 def tenant_apps():
     """テナントアプリ一覧"""
-    tenant_id = session.get('tenant_id')
-    
-    if not tenant_id:
-        flash('テナントが選択されていません', 'error')
-        return redirect(url_for('tenant_admin.dashboard'))
-    
+    user_id = session.get('user_id')
+    user_role = session.get('role')
     db = SessionLocal()
     
     try:
+        # POSTリクエスト：テナント選択
+        if request.method == 'POST':
+            selected_tenant_id = request.form.get('tenant_id', type=int)
+            if selected_tenant_id:
+                # 権限チェック
+                if user_role != ROLES["SYSTEM_ADMIN"]:
+                    has_permission = db.query(TTenantAdminTenant).filter(
+                        and_(
+                            TTenantAdminTenant.admin_id == user_id,
+                            TTenantAdminTenant.tenant_id == selected_tenant_id
+                        )
+                    ).first()
+                    
+                    if not has_permission:
+                        flash('このテナントを管理する権限がありません', 'error')
+                        return redirect(url_for('tenant_admin.tenant_apps'))
+                
+                # セッションにテナントIDを設定
+                session['tenant_id'] = selected_tenant_id
+                return redirect(url_for('tenant_admin.tenant_apps'))
+        
+        # GETリクエスト：アプリ一覧表示
+        tenant_id = session.get('tenant_id')
+        
+        # テナントが選択されていない場合、テナント選択UIを表示
+        if not tenant_id:
+            # テナント一覧を取得
+            if user_role == ROLES["SYSTEM_ADMIN"]:
+                tenants_list = db.query(TTenant).filter(TTenant.有効 == 1).order_by(TTenant.id).all()
+            else:
+                tenant_relations = db.query(TTenantAdminTenant).filter(
+                    TTenantAdminTenant.admin_id == user_id
+                ).all()
+                
+                tenant_ids = [rel.tenant_id for rel in tenant_relations]
+                tenants_list = db.query(TTenant).filter(
+                    and_(TTenant.id.in_(tenant_ids), TTenant.有効 == 1)
+                ).order_by(TTenant.id).all()
+            
+            tenants = [{'id': t.id, 'name': t.名称} for t in tenants_list]
+            return render_template('tenant_admin_tenant_apps.html', tenant=None, store=None, apps=[], tenants=tenants)
+        
         # テナント情報を取得
         tenant = db.query(TTenant).filter(TTenant.id == tenant_id).first()
         
         if not tenant:
             flash('テナント情報が見つかりません', 'error')
-            return redirect(url_for('tenant_admin.dashboard'))
-        
-        tenant_data = {
-            'id': tenant.id,
-            '名称': tenant.名称,
-            'slug': tenant.slug,
-            'created_at': tenant.created_at
-        }
+            session.pop('tenant_id', None)
+            return redirect(url_for('tenant_admin.tenant_apps'))
         
         # テナントレベルで有効なアプリを取得
         enabled_apps = []
@@ -2188,7 +2220,22 @@ def tenant_apps():
         store_id = session.get('store_id')
         store = db.query(TTenpo).filter(TTenpo.id == store_id).first() if store_id else None
         
-        return render_template('tenant_admin_tenant_apps.html', tenant=tenant, store=store, apps=apps)
+        # テナント一覧も渡す（テナント切り替え用）
+        if user_role == ROLES["SYSTEM_ADMIN"]:
+            tenants_list = db.query(TTenant).filter(TTenant.有効 == 1).order_by(TTenant.id).all()
+        else:
+            tenant_relations = db.query(TTenantAdminTenant).filter(
+                TTenantAdminTenant.admin_id == user_id
+            ).all()
+            
+            tenant_ids = [rel.tenant_id for rel in tenant_relations]
+            tenants_list = db.query(TTenant).filter(
+                and_(TTenant.id.in_(tenant_ids), TTenant.有効 == 1)
+            ).order_by(TTenant.id).all()
+        
+        tenants = [{'id': t.id, 'name': t.名称} for t in tenants_list]
+        
+        return render_template('tenant_admin_tenant_apps.html', tenant=tenant, store=store, apps=apps, tenants=tenants)
     finally:
         db.close()
 

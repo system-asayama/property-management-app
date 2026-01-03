@@ -6,8 +6,33 @@
   <h1 style="margin-top:12px">利用可能アプリ一覧</h1>
 </div>
 
+{% if not tenant %}
+<!-- テナント未選択の場合、テナント選択UIを表示 -->
 <div class="card">
-  <h2>{{ tenant.名称 if tenant else 'テナント名' }} で利用可能なアプリ</h2>
+  <h2>テナントを選択してください</h2>
+  <p style="color:#666;margin-top:12px">利用可能なアプリを表示するには、まずテナントを選択してください。</p>
+  
+  <form method="POST" style="margin-top:20px">
+    <div class="form-group">
+      <label for="tenant_id">テナント *</label>
+      <select id="tenant_id" name="tenant_id" required>
+        <option value="">-- テナントを選択してください --</option>
+        {% for t in tenants %}
+        <option value="{{ t.id }}">{{ t.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="btn">アプリ一覧を表示</button>
+  </form>
+  
+  <div style="margin-top:20px">
+    <a class="btn sub" href="{{ url_for('tenant_admin.dashboard') }}">ダッシュボードに戻る</a>
+  </div>
+</div>
+{% else %}
+<!-- テナント選択済みの場合、アプリ一覧を表示 -->
+<div class="card">
+  <h2>{{ tenant.名称 }} で利用可能なアプリ</h2>
   
   {% if apps and apps|length > 0 %}
     <div style="margin-top:20px">
@@ -33,4 +58,5 @@
     <a class="btn sub" href="{{ url_for('tenant_admin.dashboard') }}">ダッシュボードに戻る</a>
   </div>
 </div>
+{% endif %}
 {% endblock %}
