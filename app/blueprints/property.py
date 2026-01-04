@@ -1459,9 +1459,7 @@ def simulation_new():
             借入日_str = request.form.get('借入日', '')
             返済日_str = request.form.get('返済日', '')
             返済開始年月_str = request.form.get('返済開始年月', '')
-            返済開始年月 = 返済開始年月_str if 返済開始年月_str else None
             据置期間終了年月_str = request.form.get('据置期間終了年月', '')
-            据置期間終了年月 = 据置期間終了年月_str if 据置期間終了年月_str else None
             初回利息支払方法 = int(request.form.get('初回利息支払方法', '1'))
             
             # 借入日をdate型に変換
@@ -1470,6 +1468,16 @@ def simulation_new():
                 借入日 = datetime.strptime(借入日_str, '%Y-%m-%d').date()
             else:
                 借入日 = date.today()
+            
+            # 返済開始年月が空の場合は、借入日の翌月をデフォルトとする
+            if not 返済開始年月_str:
+                from dateutil.relativedelta import relativedelta
+                返済開始年月 = (借入日 + relativedelta(months=1)).strftime('%Y-%m')
+            else:
+                返済開始年月 = 返済開始年月_str
+            
+            # 据置期間終了年月の処理
+            据置期間終了年月 = 据置期間終了年月_str if 据置期間終了年月_str else None
             
             # 返済日を整数に変換
             if 返済日_str and 返済日_str != '選択してください':
