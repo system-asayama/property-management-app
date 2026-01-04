@@ -162,6 +162,7 @@ class TSimulation(Base):
     ローン残高 = Column(Numeric(15, 2), default=0)
     ローン金利 = Column(Numeric(5, 2), default=0)
     ローン年間返済額 = Column(Numeric(15, 2), default=0)
+    ローン計算モード = Column(Integer, default=1)  # 1:簡易モード, 2:詳細モード
     
     # ローン詳細情報（自動計算用）
     借入金額 = Column(Numeric(15, 2), nullable=True)
@@ -251,5 +252,34 @@ class THeyaKeihi(Base):
     支払日 = Column(Date, nullable=True)
     支払方法 = Column(String(50), nullable=True)
     備考 = Column(Text, nullable=True)
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
+
+class TLoanCondition(Base):
+    """T_ローン条件テーブル（詳細モード用）"""
+    __tablename__ = 'T_ローン条件'
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    シミュレーションid = Column(Integer, ForeignKey('T_シミュレーション.id'), nullable=False)
+    借入日 = Column(Date, nullable=False)
+    返済日 = Column(Integer, nullable=False)  # 毎月の返済日(1-31)
+    返済開始年月 = Column(String(7), nullable=False)  # YYYY-MM形式
+    据置期間終了年月 = Column(String(7), nullable=True)  # YYYY-MM形式、NULLの場合は据置なし
+    初回利息支払方法 = Column(Integer, nullable=False, default=1)  # 1:初回にまとめて, 2:月末に支払, 3:無視
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
+
+class TLoanInterestSchedule(Base):
+    """T_ローン金利スケジュールテーブル（詳細モード用）"""
+    __tablename__ = 'T_ローン金利スケジュール'
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    シミュレーションid = Column(Integer, ForeignKey('T_シミュレーション.id'), nullable=False)
+    開始年月 = Column(String(7), nullable=False)  # YYYY-MM形式
+    終了年月 = Column(String(7), nullable=True)  # YYYY-MM形式、NULLは最終年度まで
+    金利 = Column(Numeric(5, 3), nullable=False)  # 年利率(%)
+    備考 = Column(String(200), nullable=True)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())

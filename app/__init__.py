@@ -177,6 +177,8 @@ def create_app() -> Flask:
             (models_property.TSimulationResult, 'T_シミュレーション結果'),
             (models_property.TBukkenKeihi, 'T_物件経費'),
             (models_property.THeyaKeihi, 'T_部屋経費'),
+            (models_property.TLoanCondition, 'T_ローン条件'),
+            (models_property.TLoanInterestSchedule, 'T_ローン金利スケジュール'),
         ]
         
         auto_migrate_all(engine, migration_targets)
