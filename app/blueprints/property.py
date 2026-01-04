@@ -2135,7 +2135,7 @@ def simulation_year_detail(simulation_id, year):
 
 
 @property_bp.route('/simulations/<int:simulation_id>/loan-detail', methods=['GET'])
-@tenant_admin_required
+@require_tenant_admin
 def simulation_loan_detail(simulation_id):
     """ローン詳細設定ページ（詳細モード用）"""
     db = get_db_session()
@@ -2183,7 +2183,7 @@ def simulation_loan_detail(simulation_id):
 
 
 @property_bp.route('/simulations/<int:simulation_id>/loan-detail', methods=['POST'])
-@tenant_admin_required
+@require_tenant_admin
 def simulation_loan_detail_save(simulation_id):
     """ローン詳細設定の保存"""
     db = get_db_session()
