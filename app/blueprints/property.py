@@ -1458,8 +1458,10 @@ def simulation_new():
             # 詳細モードのフィールドを取得
             借入日_str = request.form.get('借入日', '')
             返済日_str = request.form.get('返済日', '')
-            返済開始年月 = request.form.get('返済開始年月', '')
-            据置期間終了年月 = request.form.get('据置期間終了年月', None)
+            返済開始年月_str = request.form.get('返済開始年月', '')
+            返済開始年月 = 返済開始年月_str if 返済開始年月_str else None
+            据置期間終了年月_str = request.form.get('据置期間終了年月', '')
+            据置期間終了年月 = 据置期間終了年月_str if 据置期間終了年月_str else None
             初回利息支払方法 = int(request.form.get('初回利息支払方法', '1'))
             
             # 借入日をdate型に変換
@@ -1484,7 +1486,7 @@ def simulation_new():
                 借入日=借入日,
                 返済日=返済日,
                 返済開始年月=返済開始年月,
-                据置期間終了年月=据置期間終了年月 if 据置期間終了年月 else None,
+                据置期間終了年月=据置期間終了年月,
                 初回利息支払方法=初回利息支払方法
             )
             db.add(loan_condition)
