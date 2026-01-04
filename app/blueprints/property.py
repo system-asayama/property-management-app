@@ -1470,7 +1470,7 @@ def simulation_new():
                 借入日 = date.today()
             
             # 返済日を整数に変換
-            if 返済日_str:
+            if 返済日_str and 返済日_str != '選択してください':
                 if 返済日_str == '末日':
                     返済日 = 31
                 else:
