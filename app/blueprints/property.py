@@ -1696,6 +1696,100 @@ def simulation_edit(simulation_id):
         else:
             simulation.部屋数 = None
         
+        # 詳細モードの場合、TLoanConditionを作成/更新
+        if simulation.ローン計算モード == 2:
+            # 詳細モードのフィールドから値を取得
+            借入金額_詳細 = request.form.get('借入金額_詳細')
+            返済期間_年_詳細 = request.form.get('返済期間_年_詳細')
+            借入日_str = request.form.get('借入日')
+            返済日_str = request.form.get('返済日')
+            返済開始年月_str = request.form.get('返済開始年月')
+            据置期間終了年月_str = request.form.get('据置期間終了年月')
+            初回利息支払方法_str = request.form.get('初回利息支払方法')
+            ローン金利_詳細 = request.form.get('ローン金利_詳細')
+            
+            # 借入金額と返済期間をTSimulationに設定
+            if 借入金額_詳細:
+                simulation.借入金額 = Decimal(借入金額_詳細)
+                simulation.ローン残高 = Decimal(借入金額_詳細)
+            if 返済期間_年_詳細:
+                simulation.返済期間_年 = int(返済期間_年_詳細)
+            if ローン金利_詳細:
+                simulation.ローン金利 = Decimal(ローン金利_詳細)
+            
+            # 借入日をdate型に変換
+            from datetime import datetime
+            if 借入日_str:
+                借入日 = datetime.strptime(借入日_str, '%Y-%m-%d').date()
+            else:
+                借入日 = None
+            
+            # 返済日を整数または文字列に変換
+            if 返済日_str and 返済日_str != '':
+                if 返済日_str == '末日':
+                    返済日 = '末日'
+                else:
+                    返済日 = int(返済日_str)
+            else:
+                返済日 = None
+            
+            # 返済開始年月を設定（空の場合は借入日の翌月）
+            if 返済開始年月_str and 返済開始年月_str != '':
+                返済開始年月 = 返済開始年月_str
+            elif 借入日:
+                from dateutil.relativedelta import relativedelta
+                next_month = 借入日 + relativedelta(months=1)
+                返済開始年月 = next_month.strftime('%Y-%m')
+            else:
+                返済開始年月 = None
+            
+            # 据置期間終了年月
+            据置期間終了年月 = 据置期間終了年月_str if 据置期間終了年月_str and 据置期間終了年月_str != '' else None
+            
+            # 初回利息支払方法
+            初回利息支払方法 = int(初回利息支払方法_str) if 初回利息支払方法_str else 1
+            
+            # 既存のTLoanConditionを検索
+            loan_condition = db.execute(
+                select(TLoanCondition).where(TLoanCondition.シミュレーションid == simulation_id)
+            ).scalar_one_or_none()
+            
+            if loan_condition:
+                # 更新
+                loan_condition.借入日 = 借入日
+                loan_condition.返済日 = 返済日
+                loan_condition.返済開始年月 = 返済開始年月
+                loan_condition.据置期間終了年月 = 据置期間終了年月
+                loan_condition.初回利息支払方法 = 初回利息支払方法
+            else:
+                # 新規作成
+                loan_condition = TLoanCondition(
+                    シミュレーションid=simulation_id,
+                    借入日=借入日,
+                    返済日=返済日,
+                    返済開始年月=返済開始年月,
+                    据置期間終了年月=据置期間終了年月,
+                    初回利息支払方法=初回利息支払方法
+                )
+                db.add(loan_condition)
+            
+            # 金利スケジュールを更新（初期金利のみ）
+            # 既存の金利スケジュールを削除
+            db.execute(
+                delete(TLoanInterestSchedule).where(TLoanInterestSchedule.シミュレーションid == simulation_id)
+            )
+            
+            # 初期金利スケジュールを作成
+            if 返済開始年月 and ローン金利_詳細:
+                interest_schedule = TLoanInterestSchedule(
+                    シミュレーションid=simulation_id,
+                    開始年月=返済開始年月,
+                    終了年月=None,
+                    金利=Decimal(ローン金利_詳細),
+                    備考='初期金利'
+                )
+                db.add(interest_schedule)
+        
         db.commit()
         
         # シミュレーション計算を再実行
@@ -1711,10 +1805,16 @@ def simulation_edit(simulation_id):
         select(TBukken).where(TBukken.tenant_id == tenant_id, TBukken.有効 == 1)
     ).scalars().all()
     
+    # ローン詳細情報を取得
+    loan_condition = db.execute(
+        select(TLoanCondition).where(TLoanCondition.シミュレーションid == simulation_id)
+    ).scalar_one_or_none()
+    
     db.close()
     return render_template('property_simulation_edit.html', 
                          simulation=simulation,
                          properties=properties,
+                         loan_condition=loan_condition,
                          current_year=date.today().year)
 
 @property_bp.route('/simulations/<int:simulation_id>/delete', methods=['POST'])

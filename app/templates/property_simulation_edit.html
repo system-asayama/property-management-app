@@ -290,11 +290,25 @@
                 <h5 class="mb-0">ローン設定</h5>
             </div>
             <div class="card-body">
-                <!-- ローン詳細情報（自動計算用） -->
-                <div class="alert alert-info">
-                    <i class="fas fa-calculator"></i> <strong>ローン返済額自動計算</strong>
-                    <p class="mb-0">以下の情報を入力すると、年間返済額が自動計算されます。</p>
+                <!-- ローン計算モード選択 -->
+                <div class="mb-4">
+                    <label for="ローン計算モード" class="form-label"><strong>ローン計算モード</strong> <span class="text-danger">*</span></label>
+                    <select class="form-select" id="ローン計算モード" name="ローン計算モード" onchange="toggleLoanMode()" required>
+                        <option value="1" {% if not simulation.ローン計算モード or simulation.ローン計算モード == 1 %}selected{% endif %}>簡易モード（毎年同じ返済額・金利）</option>
+                        <option value="2" {% if simulation.ローン計算モード == 2 %}selected{% endif %}>詳細モード（借入日・返済日・金利変動に対応）</option>
+                    </select>
+                    <div class="form-text">
+                        <strong>簡易モード:</strong> 入力が簡単、毎年同じ返済額で計算<br>
+                        <strong>詳細モード:</strong> 借入日、返済日、金利変動、据置期間などを詳細に設定可能
+                    </div>
                 </div>
+                
+                <!-- 簡易モード用フィールド -->
+                <div id="simpleLoanFields">
+                    <div class="alert alert-info">
+                        <i class="fas fa-calculator"></i> <strong>ローン返済額自動計算</strong>
+                        <p class="mb-0">以下の情報を入力すると、年間返済額が自動計算されます。</p>
+                    </div>
                 
                 <div class="row">
                     <div class="col-md-6 mb-3">
@@ -360,6 +374,89 @@
                         <label for="年間利息支払額" class="form-label">└─ 利息支払額（円/年）</label>
                         <input type="text" class="form-control bg-light" id="年間利息支払額" readonly>
                         <div class="form-text">初年度の利息支払額</div>
+                    </div>
+                </div>
+                </div>
+                
+                <!-- 詳細モード用フィールド -->
+                <div id="detailLoanFields" style="display: none;">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-info-circle"></i> <strong>詳細モード</strong>
+                        <p class="mb-0">借入日、返済日、金利変動などを詳細に設定できます。シミュレーション保存後、詳細設定ページで追加設定が可能です。</p>
+                    </div>
+                    
+                    <!-- 基本情報 -->
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="借入金額_詳細" class="form-label">借入金額（円） <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="借入金額_詳細" name="借入金額_詳細" value="{{ simulation.借入金額 or '' }}" min="0" step="1">
+                            <div class="form-text">ローンの総借入金額</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="返済期間_年_詳細" class="form-label">返済期間（年） <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="返済期間_年_詳細" name="返済期間_年_詳細" value="{{ simulation.返済期間_年 or '' }}" min="1" max="50" step="1">
+                            <div class="form-text">例: 35年</div>
+                        </div>
+                    </div>
+                    
+                    <!-- 借入日・返済日 -->
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="借入日" class="form-label">借入日 <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" id="借入日" name="借入日" value="{% if loan_condition %}{{ loan_condition.借入日 }}{% endif %}">
+                            <div class="form-text">ローン契約日・融資実行日</div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="返済日" class="form-label">返済日（毎月） <span class="text-danger">*</span></label>
+                            <select class="form-select" id="返済日" name="返済日">
+                                <option value="">選択してください</option>
+                                <option value="1" {% if loan_condition and loan_condition.返済日 == 1 %}selected{% endif %}>1日</option>
+                                <option value="5" {% if loan_condition and loan_condition.返済日 == 5 %}selected{% endif %}>5日</option>
+                                <option value="10" {% if loan_condition and loan_condition.返済日 == 10 %}selected{% endif %}>10日</option>
+                                <option value="15" {% if loan_condition and loan_condition.返済日 == 15 %}selected{% endif %}>15日</option>
+                                <option value="20" {% if loan_condition and loan_condition.返済日 == 20 %}selected{% endif %}>20日</option>
+                                <option value="25" {% if loan_condition and loan_condition.返済日 == 25 %}selected{% endif %}>25日</option>
+                                <option value="27" {% if loan_condition and loan_condition.返済日 == 27 %}selected{% endif %}>27日</option>
+                                <option value="末日" {% if loan_condition and loan_condition.返済日 == '末日' %}selected{% endif %}>末日</option>
+                            </select>
+                            <div class="form-text">毎月の返済日</div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="返済開始年月" class="form-label">返済開始年月 <span class="text-danger">*</span></label>
+                            <input type="month" class="form-control" id="返済開始年月" name="返済開始年月" value="{% if loan_condition %}{{ loan_condition.返済開始年月 }}{% endif %}">
+                            <div class="form-text">初回返済の年月</div>
+                        </div>
+                    </div>
+                    
+                    <!-- 据置期間・初回利息支払方法 -->
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="据置期間終了年月" class="form-label">据置期間終了年月</label>
+                            <input type="month" class="form-control" id="据置期間終了年月" name="据置期間終了年月" value="{% if loan_condition and loan_condition.据置期間終了年月 %}{{ loan_condition.据置期間終了年月 }}{% endif %}">
+                            <div class="form-text">据置期間がある場合のみ入力（元本返済猶予期間）</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="初回利息支払方法" class="form-label">初回利息支払方法 <span class="text-danger">*</span></label>
+                            <select class="form-select" id="初回利息支払方法" name="初回利息支払方法">
+                                <option value="1" {% if not loan_condition or loan_condition.初回利息支払方法 == 1 %}selected{% endif %}>初回返済時にまとめて支払う</option>
+                                <option value="2" {% if loan_condition and loan_condition.初回利息支払方法 == 2 %}selected{% endif %}>借入月末に利息のみ支払う</option>
+                                <option value="3" {% if loan_condition and loan_condition.初回利息支払方法 == 3 %}selected{% endif %}>利息は無視する</option>
+                            </select>
+                            <div class="form-text">借入日から初回返済日までの利息の扱い</div>
+                        </div>
+                    </div>
+                    
+                    <!-- 金利設定 -->
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label for="ローン金利_詳細" class="form-label">初期金利（%） <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="ローン金利_詳細" name="ローン金利_詳細" value="{{ simulation.ローン金利 or 0 }}" min="0" max="100" step="0.01">
+                            <div class="form-text">初期の金利を設定してください。金利変動がある場合は、保存後に詳細設定ページで追加できます。</div>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-arrow-right"></i> 金利変動がある場合は、保存後に「ローン詳細設定」ページで期間ごとの金利を追加設定できます。
                     </div>
                 </div>
             </div>
@@ -469,6 +566,22 @@
 </div>
 
 <script>
+function toggleLoanMode() {
+    const loanMode = document.getElementById('ローン計算モード').value;
+    const simpleLoanFields = document.getElementById('simpleLoanFields');
+    const detailLoanFields = document.getElementById('detailLoanFields');
+    
+    if (loanMode === '2') {
+        // 詳細モード
+        simpleLoanFields.style.display = 'none';
+        detailLoanFields.style.display = 'block';
+    } else {
+        // 簡易モード
+        simpleLoanFields.style.display = 'block';
+        detailLoanFields.style.display = 'none';
+    }
+}
+
 function toggleSimulationType() {
     const simulationType = document.getElementById('シミュレーション種別').value;
     const propertyBasedFields = document.getElementById('propertyBasedFields');
@@ -638,6 +751,7 @@ function calculateDepreciation() {
 // ページ読み込み時に初期状態を設定
 document.addEventListener('DOMContentLoaded', function() {
     toggleSimulationType();
+    toggleLoanMode();
     calculateDepreciation();
 });
 </script>
