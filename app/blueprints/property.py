@@ -2089,3 +2089,129 @@ def simulation_year_detail(simulation_id, year):
                          simulation=simulation,
                          year=year,
                          year_data=year_data)
+
+
+@property_bp.route('/simulations/<int:simulation_id>/loan-detail', methods=['GET'])
+@tenant_admin_required
+def simulation_loan_detail(simulation_id):
+    """ローン詳細設定ページ（詳細モード用）"""
+    db = get_db_session()
+    
+    # シミュレーションを取得
+    simulation = db.execute(
+        select(TSimulation).where(
+            and_(
+                TSimulation.id == simulation_id,
+                TSimulation.テナントid == session['tenant_id']
+            )
+        )
+    ).scalar_one_or_none()
+    
+    if not simulation:
+        flash('シミュレーションが見つかりません', 'danger')
+        db.close()
+        return redirect(url_for('property.simulations'))
+    
+    # ローン計算モードが詳細モードでない場合はエラー
+    if simulation.ローン計算モード != 2:
+        flash('このシミュレーションは簡易モードです。詳細設定は利用できません。', 'warning')
+        db.close()
+        return redirect(url_for('property.simulation_detail', simulation_id=simulation_id))
+    
+    # ローン条件を取得
+    loan_condition = db.execute(
+        select(TLoanCondition).where(
+            TLoanCondition.シミュレーションid == simulation_id
+        )
+    ).scalar_one_or_none()
+    
+    # 金利スケジュールを取得
+    interest_schedules = db.execute(
+        select(TLoanInterestSchedule).where(
+            TLoanInterestSchedule.シミュレーションid == simulation_id
+        ).order_by(TLoanInterestSchedule.開始年月)
+    ).scalars().all()
+    
+    db.close()
+    return render_template('property_simulation_loan_detail.html',
+                         simulation=simulation,
+                         loan_condition=loan_condition,
+                         interest_schedules=interest_schedules)
+
+
+@property_bp.route('/simulations/<int:simulation_id>/loan-detail', methods=['POST'])
+@tenant_admin_required
+def simulation_loan_detail_save(simulation_id):
+    """ローン詳細設定の保存"""
+    db = get_db_session()
+    
+    # シミュレーションを取得
+    simulation = db.execute(
+        select(TSimulation).where(
+            and_(
+                TSimulation.id == simulation_id,
+                TSimulation.テナントid == session['tenant_id']
+            )
+        )
+    ).scalar_one_or_none()
+    
+    if not simulation:
+        flash('シミュレーションが見つかりません', 'danger')
+        db.close()
+        return redirect(url_for('property.simulations'))
+    
+    try:
+        # ローン条件を保存
+        loan_condition = db.execute(
+            select(TLoanCondition).where(
+                TLoanCondition.シミュレーションid == simulation_id
+            )
+        ).scalar_one_or_none()
+        
+        if not loan_condition:
+            loan_condition = TLoanCondition(シミュレーションid=simulation_id)
+            db.add(loan_condition)
+        
+        loan_condition.借入日 = request.form.get('借入日')
+        loan_condition.返済日 = int(request.form.get('返済日'))
+        loan_condition.返済開始年月 = request.form.get('返済開始年月')
+        loan_condition.据置期間終了年月 = request.form.get('据置期間終了年月') or None
+        loan_condition.初回利息支払方法 = int(request.form.get('初回利息支払方法'))
+        
+        # 既存の金利スケジュールを削除
+        db.execute(
+            delete(TLoanInterestSchedule).where(
+                TLoanInterestSchedule.シミュレーションid == simulation_id
+            )
+        )
+        
+        # 新しい金利スケジュールを保存
+        開始年月リスト = request.form.getlist('開始年月[]')
+        終了年月リスト = request.form.getlist('終了年月[]')
+        金利リスト = request.form.getlist('金利[]')
+        備考リスト = request.form.getlist('備考[]')
+        
+        for i in range(len(開始年月リスト)):
+            schedule = TLoanInterestSchedule(
+                シミュレーションid=simulation_id,
+                開始年月=開始年月リスト[i],
+                終了年月=終了年月リスト[i] if 終了年月リスト[i] else None,
+                金利=Decimal(金利リスト[i]),
+                備考=備考リスト[i] if 備考リスト[i] else None
+            )
+            db.add(schedule)
+        
+        db.commit()
+        
+        # シミュレーションを再計算
+        calculate_simulation(simulation_id, db)
+        
+        flash('ローン詳細設定を保存し、シミュレーションを再計算しました', 'success')
+        db.close()
+        return redirect(url_for('property.simulation_detail', simulation_id=simulation_id))
+        
+    except Exception as e:
+        db.rollback()
+        flash(f'保存中にエラーが発生しました: {str(e)}', 'danger')
+        db.close()
+        return redirect(url_for('property.simulation_loan_detail', simulation_id=simulation_id))

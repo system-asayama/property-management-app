@@ -13,6 +13,11 @@
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2><i class="fas fa-chart-line me-2"></i>{{ simulation.名称 }}</h2>
             <div>
+                {% if simulation.ローン計算モード == 2 %}
+                <a href="{{ url_for('property.simulation_loan_detail', simulation_id=simulation.id) }}" class="btn btn-warning">
+                    <i class="fas fa-cog me-1"></i>ローン詳細設定
+                </a>
+                {% endif %}
                 <form action="{{ url_for('property.simulation_recalculate', simulation_id=simulation.id) }}" 
                       method="POST" style="display: inline;">
                     <button type="submit" class="btn btn-info">
