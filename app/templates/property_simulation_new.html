@@ -385,16 +385,78 @@
                         <p class="mb-0">借入日、返済日、金利変動などを詳細に設定できます。シミュレーション作成後、詳細設定ページで追加設定が可能です。</p>
                     </div>
                     
-                    <p class="text-muted">詳細モードを選択した場合、シミュレーション作成後に以下の設定が可能です：</p>
-                    <ul class="text-muted">
-                        <li>借入日、返済日（毎月何日）、返済開始年月</li>
-                        <li>据置期間（元本返済献予期間）</li>
-                        <li>初回利息支払方法（まとめて/月末に）</li>
-                        <li>期間ごとの金利設定（金利変動に対応）</li>
-                    </ul>
+                    <!-- 基本情報 -->
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="借入金額_詳細" class="form-label">借入金額（円） <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="借入金額_詳細" name="借入金額_詳細" min="0" step="1">
+                            <div class="form-text">ローンの総借入金額</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="返済期間_年_詳細" class="form-label">返済期間（年） <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="返済期間_年_詳細" name="返済期間_年_詳細" min="1" max="50" step="1">
+                            <div class="form-text">例: 35年</div>
+                        </div>
+                    </div>
+                    
+                    <!-- 借入日・返済日 -->
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="借入日" class="form-label">借入日 <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" id="借入日" name="借入日">
+                            <div class="form-text">ローン契約日・融資実行日</div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="返済日" class="form-label">返済日（毎月） <span class="text-danger">*</span></label>
+                            <select class="form-select" id="返済日" name="返済日">
+                                <option value="">選択してください</option>
+                                <option value="1">1日</option>
+                                <option value="5">5日</option>
+                                <option value="10">10日</option>
+                                <option value="15">15日</option>
+                                <option value="20">20日</option>
+                                <option value="25">25日</option>
+                                <option value="27" selected>27日</option>
+                                <option value="末日">末日</option>
+                            </select>
+                            <div class="form-text">毎月の返済日</div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="返済開始年月" class="form-label">返済開始年月 <span class="text-danger">*</span></label>
+                            <input type="month" class="form-control" id="返済開始年月" name="返済開始年月">
+                            <div class="form-text">初回返済の年月</div>
+                        </div>
+                    </div>
+                    
+                    <!-- 据置期間・初回利息支払方法 -->
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="据置期間終了年月" class="form-label">据置期間終了年月</label>
+                            <input type="month" class="form-control" id="据置期間終了年月" name="据置期間終了年月">
+                            <div class="form-text">据置期間がある場合のみ入力（元本返済猶予期間）</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="初回利息支払方法" class="form-label">初回利息支払方法 <span class="text-danger">*</span></label>
+                            <select class="form-select" id="初回利息支払方法" name="初回利息支払方法">
+                                <option value="1" selected>初回返済時にまとめて支払う</option>
+                                <option value="2">借入月末に利息のみ支払う</option>
+                                <option value="3">利息は無視する</option>
+                            </select>
+                            <div class="form-text">借入日から初回返済日までの利息の扱い</div>
+                        </div>
+                    </div>
+                    
+                    <!-- 金利設定 -->
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label for="ローン金利_詳細" class="form-label">初期金利（%） <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="ローン金利_詳細" name="ローン金利_詳細" value="0" min="0" max="100" step="0.01">
+                            <div class="form-text">初期の金利を設定してください。金利変動がある場合は、シミュレーション作成後に詳細設定ページで追加できます。</div>
+                        </div>
+                    </div>
                     
                     <div class="alert alert-info">
-                        <i class="fas fa-arrow-right"></i> まずは簡易モードでシミュレーションを作成し、後から詳細モードに切り替えることも可能です。
+                        <i class="fas fa-arrow-right"></i> 金利変動がある場合は、シミュレーション作成後に「ローン詳細設定」ページで期間ごとの金利を追加設定できます。
                     </div>
                 </div>
             </div>

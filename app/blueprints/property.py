@@ -1330,11 +1330,20 @@ def simulation_new():
         # ローン計算モード
         ローン計算モード = int(request.form.get('ローン計算モード', '1'))  # デフォルトは簡易モード
         
-        # ローン詳細情報（自動計算用）
-        借入金額 = request.form.get('借入金額')
-        返済期間_年 = request.form.get('返済期間_年')
-        返済方法 = request.form.get('返済方法')
-        返済開始日_str = request.form.get('返済開始日')
+        # ローン詳細情報（モードによって異なるフィールド名を使用）
+        if ローン計算モード == 2:
+            # 詳細モード
+            借入金額 = request.form.get('借入金額_詳細')
+            返済期間_年 = request.form.get('返済期間_年_詳細')
+            ローン金利 = Decimal(request.form.get('ローン金利_詳細', '0'))
+            返済方法 = '元利均等'  # 詳細モードは元利均等のみ
+            返済開始日_str = None  # 詳細モードでは返済開始年月を使用
+        else:
+            # 簡易モード
+            借入金額 = request.form.get('借入金額')
+            返済期間_年 = request.form.get('返済期間_年')
+            返済方法 = request.form.get('返済方法')
+            返済開始日_str = request.form.get('返済開始日')
         
         # ローン詳細情報の変換
         if 借入金額:
@@ -1443,6 +1452,56 @@ def simulation_new():
         
         db.add(simulation)
         db.commit()
+        
+        # 詳細モードの場合、T_ローン条件を作成
+        if ローン計算モード == 2:
+            # 詳細モードのフィールドを取得
+            借入日_str = request.form.get('借入日', '')
+            返済日_str = request.form.get('返済日', '')
+            返済開始年月 = request.form.get('返済開始年月', '')
+            据置期間終了年月 = request.form.get('据置期間終了年月', None)
+            初回利息支払方法 = int(request.form.get('初回利息支払方法', '1'))
+            
+            # 借入日をdate型に変換
+            if 借入日_str:
+                from datetime import datetime
+                借入日 = datetime.strptime(借入日_str, '%Y-%m-%d').date()
+            else:
+                借入日 = date.today()
+            
+            # 返済日を整数に変換
+            if 返済日_str:
+                if 返済日_str == '末日':
+                    返済日 = 31
+                else:
+                    返済日 = int(返済日_str)
+            else:
+                返済日 = 27  # デフォルト
+            
+            # T_ローン条件を作成
+            loan_condition = TLoanCondition(
+                シミュレーションid=simulation.id,
+                借入日=借入日,
+                返済日=返済日,
+                返済開始年月=返済開始年月,
+                据置期間終了年月=据置期間終了年月 if 据置期間終了年月 else None,
+                初回利息支払方法=初回利息支払方法
+            )
+            db.add(loan_condition)
+            
+            # 初期金利スケジュールを作成
+            ローン金利_詳細 = float(request.form.get('ローン金利_詳細', '0'))
+            if 返済開始年月:
+                interest_schedule = TLoanInterestSchedule(
+                    シミュレーションid=simulation.id,
+                    開始年月=返済開始年月,
+                    終了年月=None,  # 最終年度まで
+                    金利=ローン金利_詳細,
+                    備考='初期金利'
+                )
+                db.add(interest_schedule)
+            
+            db.commit()
         
         # シミュレーション計算を実行
         if calculate_simulation(simulation, db):
