@@ -2009,3 +2009,83 @@ def expense_delete_room(room_id, expense_id):
     
     flash('経費を削除しました', 'success')
     return redirect(url_for('property.expense_list_room', room_id=room_id))
+
+
+@property_bp.route('/simulations/<int:simulation_id>/year/<int:year>')
+@require_tenant_admin
+def simulation_year_detail(simulation_id, year):
+    """シミュレーションの特定年度の詳細を表示（損益計算書）"""
+    db = SessionLocal()
+    tenant_id = session.get('tenant_id')
+    
+    # シミュレーションの存在確認
+    simulation = db.execute(
+        select(TSimulation).where(
+            TSimulation.id == simulation_id,
+            TSimulation.tenant_id == tenant_id
+        )
+    ).scalar_one_or_none()
+    
+    if not simulation:
+        flash('シミュレーションが見つかりません', 'danger')
+        db.close()
+        return redirect(url_for('property.simulations'))
+    
+    # 該当年度のデータを取得
+    year_data_obj = db.execute(
+        select(TSimulationResult).where(
+            and_(
+                TSimulationResult.シミュレーションid == simulation_id,
+                TSimulationResult.年度 == year
+            )
+        )
+    ).scalar_one_or_none()
+    
+    if not year_data_obj:
+        flash(f'{year}年度のデータが見つかりません', 'danger')
+        db.close()
+        return redirect(url_for('property.simulation_detail', simulation_id=simulation_id))
+    
+    # 損益計算書のデータを作成
+    # 税引後利益を計算（データベースには保存されていない）
+    税引後利益 = year_data_obj.不動産所得 - year_data_obj.税金
+    
+    # 累積キャッシュフローを計算（当年度までの合計）
+    cumulative_results = db.execute(
+        select(TSimulationResult).where(
+            and_(
+                TSimulationResult.シミュレーションid == simulation_id,
+                TSimulationResult.年度 <= year
+            )
+        ).order_by(TSimulationResult.年度)
+    ).scalars().all()
+    
+    累積キャッシュフロー = sum(r.キャッシュフロー for r in cumulative_results)
+    
+    # テンプレートに渡すデータを作成
+    year_data = {
+        '年度': year_data_obj.年度,
+        '家賃収入': year_data_obj.家賃収入,
+        'その他収入': year_data_obj.その他収入,
+        '総収入': year_data_obj.総収入,
+        '管理費': year_data_obj.管理費,
+        '修繕費': year_data_obj.修繕費,
+        '固定資産税': year_data_obj.固定資産税,
+        '損害保険料': year_data_obj.損害保険料,
+        '借入金利息': year_data_obj.借入金利息,
+        '減価償却費': year_data_obj.減価償却費,
+        'その他経費': year_data_obj.その他経費,
+        '総経費': year_data_obj.総経費,
+        '不動産所得': year_data_obj.不動産所得,
+        '税金': year_data_obj.税金,
+        '税引後利益': 税引後利益,
+        'キャッシュフロー': year_data_obj.キャッシュフロー,
+        '累積キャッシュフロー': 累積キャッシュフロー,
+        'ローン残高': year_data_obj.ローン残高
+    }
+    
+    db.close()
+    return render_template('property_simulation_year_detail.html',
+                         simulation=simulation,
+                         year=year,
+                         year_data=year_data)
