@@ -3,7 +3,7 @@
 不動産管理アプリのBlueprint
 """
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
-from sqlalchemy import select, update, delete
+from sqlalchemy import select, update, delete, and_
 from datetime import datetime, date
 from decimal import Decimal
 from app.db import SessionLocal
