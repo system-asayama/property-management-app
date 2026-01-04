@@ -1106,9 +1106,15 @@ def calculate_simulation(simulation, db):
         if loan_condition and interest_schedules:
             interest_schedule_list = [{'開始年月': s.開始年月, '終了年月': s.終了年月, '金利': s.金利} for s in interest_schedules]
             
+            # 借入日の型を確認
+            if isinstance(loan_condition.借入日, str):
+                loan_start_date = datetime.strptime(loan_condition.借入日, '%Y-%m-%d').date()
+            else:
+                loan_start_date = loan_condition.借入日
+            
             loan_yearly_data = calculate_detailed_loan_payment(
                 loan_amount=simulation.借入金額 or Decimal('0'),
-                loan_start_date=datetime.strptime(loan_condition.借入日, '%Y-%m-%d').date(),
+                loan_start_date=loan_start_date,
                 payment_day=loan_condition.返済日,
                 payment_start_ym=loan_condition.返済開始年月,
                 grace_period_end_ym=loan_condition.据置期間終了年月,
