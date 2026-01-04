@@ -290,11 +290,25 @@
                 <h5 class="mb-0">ローン設定</h5>
             </div>
             <div class="card-body">
-                <!-- ローン詳細情報（自動計算用） -->
-                <div class="alert alert-info">
-                    <i class="fas fa-calculator"></i> <strong>ローン返済額自動計算</strong>
-                    <p class="mb-0">以下の情報を入力すると、年間返済額が自動計算されます。</p>
+                <!-- ローン計算モード選択 -->
+                <div class="mb-4">
+                    <label for="ローン計算モード" class="form-label"><strong>ローン計算モード</strong> <span class="text-danger">*</span></label>
+                    <select class="form-select" id="ローン計算モード" name="ローン計算モード" onchange="toggleLoanMode()" required>
+                        <option value="1" selected>簡易モード（毎年同じ返済額・金利）</option>
+                        <option value="2">詳細モード（借入日・返済日・金利変動に対応）</option>
+                    </select>
+                    <div class="form-text">
+                        <strong>簡易モード:</strong> 入力が簡単、毎年同じ返済額で計算<br>
+                        <strong>詳細モード:</strong> 借入日、返済日、金利変動、据置期間などを詳細に設定可能
+                    </div>
                 </div>
+                
+                <!-- 簡易モード用フィールド -->
+                <div id="simpleLoanFields">
+                    <div class="alert alert-info">
+                        <i class="fas fa-calculator"></i> <strong>ローン返済額自動計算</strong>
+                        <p class="mb-0">以下の情報を入力すると、年間返済額が自動計算されます。</p>
+                    </div>
                 
                 <div class="row">
                     <div class="col-md-6 mb-3">
@@ -360,6 +374,27 @@
                         <label for="年間利息支払額" class="form-label">└─ 利息支払額（円/年）</label>
                         <input type="text" class="form-control bg-light" id="年間利息支払額" readonly>
                         <div class="form-text">初年度の利息支払額</div>
+                    </div>
+                </div>
+                </div>
+                
+                <!-- 詳細モード用フィールド -->
+                <div id="detailLoanFields" style="display: none;">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-info-circle"></i> <strong>詳細モード</strong>
+                        <p class="mb-0">借入日、返済日、金利変動などを詳細に設定できます。シミュレーション作成後、詳細設定ページで追加設定が可能です。</p>
+                    </div>
+                    
+                    <p class="text-muted">詳細モードを選択した場合、シミュレーション作成後に以下の設定が可能です：</p>
+                    <ul class="text-muted">
+                        <li>借入日、返済日（毎月何日）、返済開始年月</li>
+                        <li>据置期間（元本返済献予期間）</li>
+                        <li>初回利息支払方法（まとめて/月末に）</li>
+                        <li>期間ごとの金利設定（金利変動に対応）</li>
+                    </ul>
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-arrow-right"></i> まずは簡易モードでシミュレーションを作成し、後から詳細モードに切り替えることも可能です。
                     </div>
                 </div>
             </div>
@@ -464,6 +499,22 @@
 </div>
 
 <script>
+function toggleLoanMode() {
+    const loanMode = document.getElementById('ローン計算モード').value;
+    const simpleLoanFields = document.getElementById('simpleLoanFields');
+    const detailLoanFields = document.getElementById('detailLoanFields');
+    
+    if (loanMode === '2') {
+        // 詳細モード
+        simpleLoanFields.style.display = 'none';
+        detailLoanFields.style.display = 'block';
+    } else {
+        // 簡易モード
+        simpleLoanFields.style.display = 'block';
+        detailLoanFields.style.display = 'none';
+    }
+}
+
 function toggleSimulationType() {
     const simulationType = document.getElementById('シミュレーション種別').value;
     const propertyBasedFields = document.getElementById('propertyBasedFields');
