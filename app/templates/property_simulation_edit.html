@@ -399,6 +399,22 @@
                         </div>
                     </div>
                     
+                    <!-- 返済方法 -->
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="返済方法_詳細" class="form-label">返済方法 <span class="text-danger">*</span></label>
+                            <select class="form-select" id="返済方法_詳細" name="返済方法">
+                                <option value="">選択してください</option>
+                                <option value="元利均等" {% if simulation.返済方法 == '元利均等' %}selected{% elif not simulation.返済方法 %}selected{% endif %}>元利均等返済</option>
+                                <option value="元金均等" {% if simulation.返済方法 == '元金均等' %}selected{% endif %}>元金均等返済</option>
+                            </select>
+                            <div class="form-text">
+                                <strong>元利均等:</strong> 毎月の返済額が一定<br>
+                                <strong>元金均等:</strong> 毎月の元金返済額が一定（利息は減少）
+                            </div>
+                        </div>
+                    </div>
+                    
                     <!-- 借入日・返済日 -->
                     <div class="row">
                         <div class="col-md-4 mb-3">

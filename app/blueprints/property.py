@@ -1342,7 +1342,7 @@ def simulation_new():
             借入金額 = request.form.get('借入金額_詳細')
             返済期間_年 = request.form.get('返済期間_年_詳細')
             ローン金利 = Decimal(request.form.get('ローン金利_詳細', '0'))
-            返済方法 = '元利均等'  # 詳細モードは元利均等のみ
+            返済方法 = request.form.get('返済方法')  # フォームから取得
             返済開始日_str = None  # 詳細モードでは返済開始年月を使用
         else:
             # 簡易モード
