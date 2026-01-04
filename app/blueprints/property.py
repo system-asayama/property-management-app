@@ -7,7 +7,7 @@ from sqlalchemy import select, update, delete, and_
 from datetime import datetime, date
 from decimal import Decimal
 from app.db import SessionLocal
-from app.models_property import TBukken, THeya, TNyukyosha, TKeiyaku, TYachinShushi, TGenkashokaku, TSimulation, TSimulationResult, TBukkenKeihi, THeyaKeihi
+from app.models_property import TBukken, THeya, TNyukyosha, TKeiyaku, TYachinShushi, TGenkashokaku, TSimulation, TSimulationResult, TBukkenKeihi, THeyaKeihi, TLoanCondition, TLoanInterestSchedule
 
 property_bp = Blueprint('property', __name__, url_prefix='/property')
 
