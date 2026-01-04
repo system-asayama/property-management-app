@@ -1078,6 +1078,9 @@ def calculate_tax_rate(total_income):
 
 def calculate_simulation(simulation, db):
     """シミュレーション計算を実行"""
+    from app.utils.loan_calculator import calculate_detailed_loan_payment
+    from datetime import datetime
+    
     tenant_id = session.get('tenant_id')
     
     # 既存の結果を削除
@@ -1085,6 +1088,37 @@ def calculate_simulation(simulation, db):
         delete(TSimulationResult).where(TSimulationResult.シミュレーションid == simulation.id)
     )
     db.commit()
+    
+    # ローン計算モードによる分岐
+    loan_yearly_data = None
+    if simulation.ローン計算モード == 2:
+        # 詳細モード
+        loan_condition = db.execute(
+            select(TLoanCondition).where(TLoanCondition.シミュレーションid == simulation.id)
+        ).scalar_one_or_none()
+        
+        interest_schedules = db.execute(
+            select(TLoanInterestSchedule).where(
+                TLoanInterestSchedule.シミュレーションid == simulation.id
+            ).order_by(TLoanInterestSchedule.開始年月)
+        ).scalars().all()
+        
+        if loan_condition and interest_schedules:
+            interest_schedule_list = [{'開始年月': s.開始年月, '終了年月': s.終了年月, '金利': s.金利} for s in interest_schedules]
+            
+            loan_yearly_data = calculate_detailed_loan_payment(
+                loan_amount=simulation.借入金額 or Decimal('0'),
+                loan_start_date=datetime.strptime(loan_condition.借入日, '%Y-%m-%d').date(),
+                payment_day=loan_condition.返済日,
+                payment_start_ym=loan_condition.返済開始年月,
+                grace_period_end_ym=loan_condition.据置期間終了年月,
+                first_interest_payment_method=loan_condition.初回利息支払方法,
+                interest_schedules=interest_schedule_list,
+                repayment_method=simulation.返済方法 or '元利均等',
+                repayment_period_years=simulation.返済期間_年 or 0,
+                start_year=simulation.開始年度,
+                period_years=simulation.期間
+            )
     
     # シミュレーション種別による分岐
     property_data = None
@@ -1138,7 +1172,15 @@ def calculate_simulation(simulation, db):
         修繕費 = 家賃収入 * (simulation.修繕費率 / 100)
         固定資産税 = simulation.固定資産税
         損害保険料 = simulation.損害保険料
-        借入金利息 = current_loan_balance * (simulation.ローン金利 / 100)
+        # ローン計算モードによる分岐
+        if loan_yearly_data and year in loan_yearly_data:
+            # 詳細モード
+            借入金利息 = loan_yearly_data[year]['利息']
+            ローン元本返済 = loan_yearly_data[year]['元本返済額']
+            current_loan_balance = loan_yearly_data[year]['ローン残高']
+        else:
+            # 簡易モード
+            借入金利息 = current_loan_balance * (simulation.ローン金利 / 100)
         その他経費 = simulation.その他経費
         
         # 減価償却費を計算（3分割方式）
@@ -1192,13 +1234,14 @@ def calculate_simulation(simulation, db):
                 税金 = Decimal('0')
         
         # キャッシュフロー
-        ローン元本返済 = simulation.ローン年間返済額 - 借入金利息
-        キャッシュフロー = 総収入 - (総経費 - 減価償却費) - 税金 - ローン元本返済
+        if not (loan_yearly_data and year in loan_yearly_data):
+            # 簡易モードの場合のみ計算
+            ローン元本返済 = simulation.ローン年間返済額 - 借入金利息
+            current_loan_balance -= ローン元本返済
+            if current_loan_balance < 0:
+                current_loan_balance = Decimal('0')
         
-        # ローン残高を更新
-        current_loan_balance -= ローン元本返済
-        if current_loan_balance < 0:
-            current_loan_balance = Decimal('0')
+        キャッシュフロー = 総収入 - (総経費 - 減価償却費) - 税金 - ローン元本返済
         
         # 結果を保存
         result = TSimulationResult(
