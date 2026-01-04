@@ -2146,7 +2146,7 @@ def simulation_year_detail(simulation_id, year):
 @require_tenant_admin
 def simulation_loan_detail(simulation_id):
     """ローン詳細設定ページ（詳細モード用）"""
-    db = get_db_session()
+    db = SessionLocal()
     
     # シミュレーションを取得
     simulation = db.execute(
@@ -2194,7 +2194,7 @@ def simulation_loan_detail(simulation_id):
 @require_tenant_admin
 def simulation_loan_detail_save(simulation_id):
     """ローン詳細設定の保存"""
-    db = get_db_session()
+    db = SessionLocal()
     
     # シミュレーションを取得
     simulation = db.execute(
