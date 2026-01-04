@@ -1327,6 +1327,9 @@ def simulation_new():
         ローン金利 = Decimal(request.form.get('ローン金利', '0'))
         ローン年間返済額 = Decimal(request.form.get('ローン年間返済額', '0'))
         
+        # ローン計算モード
+        ローン計算モード = int(request.form.get('ローン計算モード', '1'))  # デフォルトは簡易モード
+        
         # ローン詳細情報（自動計算用）
         借入金額 = request.form.get('借入金額')
         返済期間_年 = request.form.get('返済期間_年')
@@ -1412,6 +1415,8 @@ def simulation_new():
             ローン残高=ローン残高,
             ローン金利=ローン金利,
             ローン年間返済額=ローン年間返済額,
+            # ローン計算モード
+            ローン計算モード=ローン計算モード,
             # ローン詳細情報
             借入金額=借入金額,
             返済期間_年=返済期間_年,
@@ -1537,6 +1542,9 @@ def simulation_edit(simulation_id):
         simulation.ローン残高 = Decimal(request.form.get('ローン残高', '0'))
         simulation.ローン金利 = Decimal(request.form.get('ローン金利', '0'))
         simulation.ローン年間返済額 = Decimal(request.form.get('ローン年間返済額', '0'))
+        
+        # ローン計算モード
+        simulation.ローン計算モード = int(request.form.get('ローン計算モード', '1'))  # デフォルトは簡易モード
         
         # ローン詳細情報（自動計算用）
         借入金額 = request.form.get('借入金額')
