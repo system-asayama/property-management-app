@@ -2153,7 +2153,7 @@ def simulation_loan_detail(simulation_id):
         select(TSimulation).where(
             and_(
                 TSimulation.id == simulation_id,
-                TSimulation.テナントid == session['tenant_id']
+                TSimulation.tenant_id == session['tenant_id']
             )
         )
     ).scalar_one_or_none()
@@ -2201,7 +2201,7 @@ def simulation_loan_detail_save(simulation_id):
         select(TSimulation).where(
             and_(
                 TSimulation.id == simulation_id,
-                TSimulation.テナントid == session['tenant_id']
+                TSimulation.tenant_id == session['tenant_id']
             )
         )
     ).scalar_one_or_none()
